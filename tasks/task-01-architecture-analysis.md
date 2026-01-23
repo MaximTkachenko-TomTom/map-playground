@@ -584,6 +584,135 @@ implementation("com.mapbox.mapboxsdk:mapbox-sdk-geojson:5.9.0")
 
 ---
 
+## Diamond Icon and Sizing Details
+
+### Icon Source
+
+The diamond shape for restriction markers comes from an **icon image** that must be defined in the MapLibre style system.
+
+**Icon Creation and Deployment:**
+
+1. **Create SVG Icon:**
+```svg
+<!-- diamond-restriction.svg -->
+<svg width="20" height="30" viewBox="0 0 20 30">
+  <path d="M 10,2 L 18,15 L 10,28 L 2,15 Z" 
+        fill="#FF0000" 
+        stroke="#FFFFFF" 
+        stroke-width="2"/>
+</svg>
+```
+
+2. **Generate Sprite Sheet:**
+   - Use tools like [spritezero](https://github.com/mapbox/spritezero) to combine icons
+   - Output: `sprites.png` (image) + `sprites.json` (metadata)
+
+3. **Host on Server:**
+```
+Tile Server:
+  ├── tiles/{z}/{x}/{y}.pbf (from map-tile-generator)
+  ├── sprites/sprites.png (contains diamond + other icons)
+  ├── sprites/sprites.json (icon definitions)
+  └── style.json (references sprite sheet)
+```
+
+4. **Reference in Style:**
+```json
+{
+  "sprite": "https://tiles.example.com/sprites/sprites",
+  "layers": [{
+    "layout": {
+      "icon-image": "diamond-restriction"
+    }
+  }]
+}
+```
+
+**Component Responsibilities:**
+- ❌ **map-tile-generator:** Does NOT create icon images (only generates point positions)
+- ✅ **Style/Sprite Server:** Hosts icon images in sprite sheet
+- ✅ **Unity Renderer:** Downloads sprites and renders icons at point locations
+
+### Maintaining 2m × 3m Physical Size
+
+**Requirement:** Diamond markers must always represent 2 meters wide × 3 meters tall in real-world space.
+
+**Challenge:** The relationship between pixels and meters changes with zoom level.
+
+**Meters-Per-Pixel at Different Zooms:**
+
+| Zoom | m/pixel | Pixels for 2m | Icon Size Multiplier |
+|------|---------|---------------|---------------------|
+| 16 | ~2.4m | 0.83px | 0.04× (20px base) |
+| 17 | ~1.2m | 1.67px | 0.08× |
+| 18 | ~0.6m | 3.33px | 0.17× |
+| 19 | ~0.3m | 6.67px | 0.33× |
+| 20 | ~0.15m | 13.3px | 0.67× |
+
+**Formula:** `metersPerPixel = 156543.03392 × cos(latitude) / 2^zoom`
+
+**Style Configuration:**
+
+```json
+{
+  "id": "restriction-markers",
+  "type": "symbol",
+  "source": "vector-tiles",
+  "source-layer": "restriction-points",
+  "minzoom": 16,  // Hide below zoom 16 (too small to see)
+  "layout": {
+    "icon-image": "diamond-restriction",
+    "icon-rotate": ["get", "bearing"],
+    "icon-rotation-alignment": "map",
+    "icon-allow-overlap": true,
+    "icon-ignore-placement": true,
+    
+    // Maintain 2m×3m physical size
+    "icon-size": [
+      "interpolate",
+      ["exponential", 2],  // Doubles each zoom (matches map scale)
+      ["zoom"],
+      16, 0.04,    // ~2m at zoom 16 (0.8px wide)
+      17, 0.08,    // ~2m at zoom 17 (1.6px wide)
+      18, 0.17,    // ~2m at zoom 18 (3.3px wide)
+      19, 0.33,    // ~2m at zoom 19 (6.7px wide)
+      20, 0.67,    // ~2m at zoom 20 (13.3px wide)
+      21, 1.33,    // ~2m at zoom 21 (26.7px wide)
+      22, 2.67     // ~2m at zoom 22 (53.3px wide)
+    ]
+  },
+  "paint": {
+    // Optional: smooth fade-in at threshold zoom
+    "icon-opacity": [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      15.5, 0,     // Invisible below 15.5
+      16.5, 1      // Fully visible at 16.5
+    ]
+  }
+}
+```
+
+**How It Works:**
+
+1. **Base Icon:** 20×30 pixels in sprite sheet
+2. **Zoom Changes:** User zooms map (e.g., 17.5)
+3. **Unity Evaluates Expression:** Interpolates between zoom stops
+   - At zoom 17.5: size ≈ 0.12× (between 0.08 and 0.17)
+4. **Unity Renders:** 20 × 0.12 = 2.4 pixels wide ≈ 2 meters at zoom 17.5
+5. **Result:** Diamond maintains approximately 2m×3m real-world size
+
+**Visibility Strategy:**
+
+- **minzoom: 16** - Don't render below zoom 16 (would be < 1 pixel)
+- **Fade-in** - Gradually appear between zoom 15.5 and 16.5
+- **Result:** Diamonds visible only when large enough to see, always represent 2m×3m
+
+**Key Insight:** Using `exponential` interpolation with base 2 matches the map's zoom behavior (each level doubles scale), making icons appear to maintain consistent real-world size.
+
+---
+
 ## Conclusion
 
 **The architectural decision path is clear:**
