@@ -1,0 +1,3 @@
+const CONFIG = {
+    TOMTOM_API_KEY: 'YOUR_KEY_HERE'
+};

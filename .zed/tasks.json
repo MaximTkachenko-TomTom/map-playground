@@ -1,0 +1,13 @@
+[
+  {
+    "label": "Open Map in Browser",
+    "command": "open map.html",
+    "cwd": "/Users/tkachenk/dev/workspace/map-playground",
+  },
+  {
+    "label": "Start Local Server",
+    "command": "python3 -m http.server 8000",
+    "cwd": "/Users/tkachenk/dev/workspace/map-playground",
+    "use_new_terminal": true,
+  },
+]
