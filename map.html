@@ -13,6 +13,7 @@
             href="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.css"
         />
         <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
+        <script src="https://unpkg.com/@turf/turf@7.0.0/turf.min.js"></script>
         <script src="config.js"></script>
         <style>
             body {
@@ -37,6 +38,31 @@
             });
 
             map.on("load", () => {
+                // Store route coordinates for reuse
+                const routeCoordinates = [
+                    [-122.48369693756104, 37.83381888486939],
+                    [-122.48348236083984, 37.83317489144141],
+                    [-122.48339653015138, 37.83270036637107],
+                    [-122.48356819152832, 37.832056363179625],
+                    [-122.48404026031496, 37.83114119107971],
+                    [-122.48404026031496, 37.83049717427869],
+                    [-122.48348236083984, 37.829920943955045],
+                    [-122.48356819152832, 37.82954808664175],
+                    [-122.48507022857666, 37.82944639795659],
+                    [-122.48610019683838, 37.82880236636284],
+                    [-122.48695850372314, 37.82931081282506],
+                    [-122.48700141906738, 37.83080223556934],
+                    [-122.48751640319824, 37.83168351665737],
+                    [-122.48803138732912, 37.832158048267786],
+                    [-122.48888969421387, 37.83297152392784],
+                    [-122.48987674713133, 37.83263257682617],
+                    [-122.49043464660643, 37.832937629287755],
+                    [-122.49125003814696, 37.832429207817725],
+                    [-122.49163627624512, 37.832564787218985],
+                    [-122.49223709106445, 37.83337825839438],
+                    [-122.49378204345702, 37.83368330777276],
+                ];
+
                 map.addSource("route", {
                     type: "geojson",
                     data: {
@@ -44,29 +70,7 @@
                         properties: {},
                         geometry: {
                             type: "LineString",
-                            coordinates: [
-                                [-122.48369693756104, 37.83381888486939],
-                                [-122.48348236083984, 37.83317489144141],
-                                [-122.48339653015138, 37.83270036637107],
-                                [-122.48356819152832, 37.832056363179625],
-                                [-122.48404026031496, 37.83114119107971],
-                                [-122.48404026031496, 37.83049717427869],
-                                [-122.48348236083984, 37.829920943955045],
-                                [-122.48356819152832, 37.82954808664175],
-                                [-122.48507022857666, 37.82944639795659],
-                                [-122.48610019683838, 37.82880236636284],
-                                [-122.48695850372314, 37.82931081282506],
-                                [-122.48700141906738, 37.83080223556934],
-                                [-122.48751640319824, 37.83168351665737],
-                                [-122.48803138732912, 37.832158048267786],
-                                [-122.48888969421387, 37.83297152392784],
-                                [-122.48987674713133, 37.83263257682617],
-                                [-122.49043464660643, 37.832937629287755],
-                                [-122.49125003814696, 37.832429207817725],
-                                [-122.49163627624512, 37.832564787218985],
-                                [-122.49223709106445, 37.83337825839438],
-                                [-122.49378204345702, 37.83368330777276],
-                            ],
+                            coordinates: routeCoordinates,
                         },
                     },
                 });
@@ -80,9 +84,113 @@
                     },
                     paint: {
                         "line-color": "#b61e1e",
-                        "line-width": 8,
+                        "line-width": 2,
                     },
                 });
+
+                // Create diamond SVG icon for restriction markers
+                const diamondSvg = `
+                    <svg width="20" height="30" viewBox="0 0 20 30" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M 10,2 L 18,15 L 10,28 L 2,15 Z" fill="#FF0000" stroke="#FFFFFF" stroke-width="2"/>
+                    </svg>
+                `;
+                const diamondImage = new Image(20, 30);
+                diamondImage.onerror = (err) => {
+                    console.error("Failed to load diamond image:", err);
+                };
+                diamondImage.onload = () => {
+                    console.log("Diamond image loaded successfully");
+                    map.addImage("diamond-icon", diamondImage);
+                    console.log("Diamond icon added to map");
+
+                    // Calculate restriction markers at 50m intervals along the route
+                    const lineString = turf.lineString(routeCoordinates);
+                    const length = turf.length(lineString, { units: "meters" });
+                    console.log("Route length:", length, "meters");
+
+                    const markers = [];
+                    // Start at 25m to center first marker, then every 50m
+                    for (let distance = 25; distance < length; distance += 50) {
+                        const point = turf.along(lineString, distance, {
+                            units: "meters",
+                        });
+
+                        // Calculate bearing for marker rotation
+                        const segment = turf.lineSlice(
+                            turf.along(lineString, Math.max(0, distance - 1), {
+                                units: "meters",
+                            }),
+                            turf.along(
+                                lineString,
+                                Math.min(length, distance + 1),
+                                {
+                                    units: "meters",
+                                },
+                            ),
+                            lineString,
+                        );
+                        const bearing = turf.bearing(
+                            segment.geometry.coordinates[0],
+                            segment.geometry.coordinates[
+                                segment.geometry.coordinates.length - 1
+                            ],
+                        );
+
+                        markers.push({
+                            type: "Feature",
+                            geometry: point.geometry,
+                            properties: {
+                                bearing: bearing,
+                            },
+                        });
+                    }
+
+                    // Add source for restriction markers
+                    map.addSource("restriction-markers", {
+                        type: "geojson",
+                        data: {
+                            type: "FeatureCollection",
+                            features: markers,
+                        },
+                    });
+                    console.log(
+                        "Created",
+                        markers.length,
+                        "restriction markers",
+                    );
+
+                    // Add layer for restriction markers
+                    map.addLayer({
+                        id: "restriction-markers",
+                        type: "symbol",
+                        source: "restriction-markers",
+                        layout: {
+                            "icon-image": "diamond-icon",
+                            "icon-rotate": ["get", "bearing"],
+                            "icon-rotation-alignment": "map",
+                            "icon-allow-overlap": true,
+                            "icon-ignore-placement": true,
+                            // Size based on zoom to maintain ~2m x 3m physical size
+                            "icon-size": [
+                                "interpolate",
+                                ["exponential", 2],
+                                ["zoom"],
+                                10,
+                                0.1,
+                                15,
+                                0.5,
+                                18,
+                                1.5,
+                                20,
+                                3,
+                            ],
+                        },
+                    });
+                    console.log("Restriction markers layer added");
+                };
+                diamondImage.src =
+                    "data:image/svg+xml;base64," + btoa(diamondSvg);
+                console.log("Diamond image src set, waiting for load...");
             });
         </script>
     </body>

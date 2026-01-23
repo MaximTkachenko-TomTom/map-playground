@@ -226,6 +226,69 @@ map.addSource('restriction-markers', {
 
 ---
 
+### Option D: Use `line-pattern` with Repeating Image
+
+**Description:** Apply a repeating pattern image along the line using the `line-pattern` paint property. The pattern tiles automatically along the line based on image dimensions.
+
+**Implementation:**
+```json
+{
+  "id": "restriction-markers",
+  "type": "line",
+  "source": "vector-tiles",
+  "source-layer": "restricted-roads",
+  "layout": {
+    "line-join": "round",
+    "line-cap": "round"
+  },
+  "paint": {
+    "line-pattern": "diamond-pattern",
+    "line-width": 2
+  }
+}
+```
+
+**Pattern Image Requirements:**
+- Create a sprite image (e.g., 64×64px) with diamond icon at specific position
+- Pattern repeats along the line based on image width
+- The repeat spacing is **image-width dependent**, not distance-based
+- Include in sprite sheet: `sprites.png` + `sprites.json`
+
+**Pros:**
+- ✅ Pure style solution - no scripting required
+- ✅ Very simple implementation (single paint property)
+- ✅ No client-side JavaScript needed
+- ✅ No preprocessing in map-tile-generator needed
+- ✅ Excellent rendering performance
+- ✅ Works with any vector tile source
+- ✅ Zoom-independent pattern (image itself doesn't scale)
+
+**Cons:**
+- ❌ **Cannot achieve exact 50m spacing** - spacing is image-based, not distance-based
+- ❌ Pattern repeat rate depends on:
+  - Total line length
+  - Image width in pixels
+  - How MapLibre tiles the pattern
+- ❌ Spacing appears **inconsistent across different road segments**
+  - Short segments: diamonds may overlap
+  - Long segments: diamonds may be far apart
+- ❌ No way to guarantee specific distance intervals
+- ❌ Less precise control over marker placement
+- ❌ Not suitable when exact 50m spacing is a hard requirement
+
+**Best For:**
+- Decorative patterns and visual indicators (not metering)
+- When approximate visual spacing is acceptable
+- Purely aesthetic restriction road highlighting
+- Performance-critical scenarios with many restricted roads
+- When exact spacing is not a specification requirement
+
+**Web Prototype:** A test file (`map-line-pattern.html`) demonstrates this approach with side-by-side comparisons.
+
+**Conclusion:** Trades exactness for simplicity and performance. Does NOT meet the "exact 50m spacing" requirement but excellent for decorative use cases.
+
+---
+
 ## Detailed Analysis
 
 ### Performance Comparison
@@ -505,6 +568,17 @@ Use this checklist to make the final decision:
 
 **Unity Renderer Decision:** ❌ **Option B is IMPOSSIBLE for Unity renderer**
 
+### Choose Option D (line-pattern) if:
+- [ ] ~~You need exact 50m spacing~~ **NOT APPLICABLE - This is approximate only**
+- [x] **You want simplest possible implementation** ← Decorative use only
+- [x] **Spacing can be visual/approximate** ← Not metered
+- [ ] ~~You need precise distance-based intervals~~
+- [ ] ~~Production requirement for exact markers~~
+- [x] **Highlighting restricted roads visually is sufficient** ← No metering needed
+- [ ] ~~You control the map-tile-generator component~~
+
+**Use Case Decision:** ⚠️ **Option D works ONLY for visual indicators, NOT for exact 50m metering**
+
 ---
 
 ## Implementation Roadmap
@@ -720,6 +794,9 @@ Tile Server:
 **For Development:** 
 Runtime calculation (Option B) is acceptable for rapid prototyping and learning.
 
+**For Visual Indicators Only (No Metering):**
+Line-pattern approach (Option D) provides the simplest solution if exact 50m spacing is not required and the goal is only to visually highlight restricted roads.
+
 **For Production (Unity Renderer):** 
 Pre-calculating points in map-tile-generator and serving via vector tiles (Option A) is the **REQUIRED** approach for:
 - **Unity renderer compatibility** (only option that works)
@@ -746,10 +823,11 @@ Having specialized components for different responsibilities makes Option A stra
 
 **Recommended Path:**
 1. ✅ Continue with JavaScript calculation for web prototype learning only
-2. ✅ Implement calculation logic in map-tile-generator (C++)
-3. ✅ Update pre-generated style to include new layer (or use Kotlin SDK for dynamic additions)
-4. ✅ Move to tile-based approach for Unity production
-5. ✅ This gives you speed now (web prototype) and Unity compatibility later (production)
+2. ✅ For visual indicators only: Consider line-pattern (Option D) for simplicity
+3. ✅ For metered restrictions: Implement calculation logic in map-tile-generator (C++)
+4. ✅ Update pre-generated style to include new layer (or use Kotlin SDK for dynamic additions)
+5. ✅ Move to tile-based approach for Unity production
+6. ✅ This gives you speed now (web prototype) and Unity compatibility later (production)
 
 **Architecture Flow for Unity:**
 ```
@@ -767,10 +845,15 @@ Style Server → Pre-generated Style JSON → Kotlin SDK (optional modifications
 ## Resources
 
 - [MapLibre Style Specification - Symbol Layer](https://maplibre.org/maplibre-style-spec/layers/#symbol)
+- [MapLibre Style Specification - Line Layer](https://maplibre.org/maplibre-style-spec/layers/#line) - For line-pattern approach
 - [MapLibre Expressions](https://maplibre.org/maplibre-style-spec/expressions/)
 - [Vector Tile Specification](https://github.com/mapbox/vector-tile-spec)
 - [Turf.js Documentation](https://turfjs.org/) - For web prototype
 - [Mapbox Geometry C++](https://github.com/mapbox/geometry.hpp) - For map-tile-generator
+
+**Test Files & Prototypes:**
+- `map.html` - Option B demonstration (runtime calculation with Turf.js)
+- `map-line-pattern.html` - Option D demonstration (line-pattern repeating approach with interactive comparison)
 
 ---
 
