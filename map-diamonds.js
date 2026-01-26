@@ -1,5 +1,5 @@
 // Diamond Markers - Region definitions and rendering
-// This module handles all diamond-related functionality
+// This module handles all diamond-related functionality using image-based markers
 
 // Define three regions with their coordinates and colors
 const regions = [
@@ -8,21 +8,18 @@ const regions = [
         color: "#2e7d32",
         outlineColor: "#1b5e20",
         center: [-51.9253, -15.7975], // São Paulo area
-        baseSize: 0.000015,
     },
     {
         name: "Mexico",
         color: "#f57c00",
         outlineColor: "#e65100",
         center: [-101.5037, 19.4326], // Mexico City area
-        baseSize: 0.000015,
     },
     {
         name: "Canada",
         color: "#1565c0",
         outlineColor: "#0d47a1",
         center: [-106.3468, 56.1304], // Alberta area
-        baseSize: 0.000015,
     },
 ];
 
@@ -43,152 +40,112 @@ const canadaDiamondPoints = [
 
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
-    // Create diamond points for each region
-    const allDiamonds = [];
-
-    regions.forEach((region) => {
-        const diamondPoints = [];
-
-        // Use hardcoded points for each region
-        let pointsToUse = [];
-        if (region.name === "Brazil") {
-            pointsToUse = brazilDiamondPoints;
-        } else if (region.name === "Mexico") {
-            pointsToUse = mexicoDiamondPoints;
-        } else if (region.name === "Canada") {
-            pointsToUse = canadaDiamondPoints;
+    // Load diamond image and add to map
+    map.loadImage("diamond.png", (error, image) => {
+        if (error) {
+            console.error("Failed to load diamond image:", error);
+            return;
         }
 
-        pointsToUse.forEach((point) => {
-            diamondPoints.push({
-                center: [point.lng, point.lat],
-                size: region.baseSize,
-                region: region.name,
-                color: region.color,
-                outlineColor: region.outlineColor,
+        map.addImage("diamond-icon", image);
+
+        // Create diamond markers for each region
+        const allDiamonds = [];
+
+        regions.forEach((region) => {
+            let pointsToUse = [];
+            if (region.name === "Brazil") {
+                pointsToUse = brazilDiamondPoints;
+            } else if (region.name === "Mexico") {
+                pointsToUse = mexicoDiamondPoints;
+            } else if (region.name === "Canada") {
+                pointsToUse = canadaDiamondPoints;
+            }
+
+            pointsToUse.forEach((point) => {
+                allDiamonds.push({
+                    type: "Feature",
+                    properties: {
+                        region: region.name,
+                        color: region.color,
+                    },
+                    geometry: {
+                        type: "Point",
+                        coordinates: [point.lng, point.lat],
+                    },
+                });
             });
         });
 
-        allDiamonds.push(...diamondPoints);
+        console.log("Total diamonds created:", allDiamonds.length);
+        console.log("Sample diamond points:", allDiamonds.slice(0, 3));
+
+        // Add diamond source and layer to map
+        addDiamondSource(map, allDiamonds);
+        addDiamondLayer(map);
+
+        // Setup location click handlers
+        setupLocationClickHandlers(map);
+
+        console.log("Map loaded with", allDiamonds.length, "diamond markers across 3 regions");
     });
-
-    // Create diamond line segments
-    const diamondLines = createDiamondLineSegments(allDiamonds);
-
-    console.log("Total diamonds created:", allDiamonds.length);
-    console.log("Total diamond line segments:", diamondLines.length);
-    console.log("Sample diamond points:", allDiamonds.slice(0, 3));
-
-    // Add diamond sources and layers to map
-    addDiamondSources(map, diamondLines, allDiamonds);
-    addDiamondLayers(map);
-
-    // Setup location click handlers
-    setupLocationClickHandlers(map);
-
-    console.log("Map loaded with", diamondLines.length, "diamond line segments across 3 regions");
-    console.log("Total diamonds:", allDiamonds.length);
 }
 
-// Create 4 line segments that form a diamond outline
-function createDiamondLines(center, size) {
-    const [lng, lat] = center;
-    const top = [lng, lat + size];
-    const right = [lng + size, lat];
-    const bottom = [lng, lat - size];
-    const left = [lng - size, lat];
-
-    return [
-        [top, right], // top-right edge
-        [right, bottom], // right-bottom edge
-        [bottom, left], // bottom-left edge
-        [left, top], // left-top edge
-    ];
-}
-
-// Create FeatureCollection with all diamond line segments
-function createDiamondLineSegments(allDiamonds) {
-    const diamondLines = [];
-
-    allDiamonds.forEach((point, diamondIndex) => {
-        const lines = createDiamondLines(point.center, point.size);
-        lines.forEach((line, edgeIndex) => {
-            diamondLines.push({
-                type: "Feature",
-                properties: {
-                    diamondId: diamondIndex,
-                    edgeId: edgeIndex,
-                    region: point.region,
-                    color: point.color,
-                    outlineColor: point.outlineColor,
-                },
-                geometry: {
-                    type: "LineString",
-                    coordinates: line,
-                },
-            });
-        });
-    });
-
-    return diamondLines;
-}
-
-// Add diamond sources to map
-function addDiamondSources(map, diamondLines, allDiamonds) {
-    // Add main diamonds source
+// Add diamond source to map
+function addDiamondSource(map, allDiamonds) {
     map.addSource("diamonds", {
         type: "geojson",
         data: {
             type: "FeatureCollection",
-            features: diamondLines,
+            features: allDiamonds,
         },
     });
 
     console.log("Diamond source added to map");
 }
 
-// Add diamond layers to map
-function addDiamondLayers(map) {
-    // Add colored diamonds layer
+// Add diamond layer to map
+function addDiamondLayer(map) {
     map.addLayer({
         id: "diamonds",
-        type: "line",
+        type: "symbol",
         source: "diamonds",
-        paint: {
-            "line-color": "#FF0000",
-            "line-width": [
+        layout: {
+            "icon-image": "diamond-icon",
+            "icon-size": [
                 "interpolate",
                 ["exponential", 2],
                 ["zoom"],
                 3,
-                0.5,
+                0.1,
                 5,
-                0.7,
+                0.15,
                 7,
-                0.9,
+                0.2,
                 10,
-                1,
+                0.3,
                 12,
-                1.2,
+                0.4,
                 13,
-                2,
+                0.5,
                 14,
-                3,
+                0.6,
                 15,
-                4,
+                0.8,
                 16,
-                5,
+                1,
                 17,
-                6,
+                1.2,
                 18,
-                8,
+                1.5,
                 20,
-                12,
+                2,
             ],
+            "icon-allow-overlap": true,
         },
     });
 
-    console.log("Diamond center layer added");
+    console.log("Diamond layer added");
 }
 
 // Setup location click handlers for zooming to regions
