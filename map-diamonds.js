@@ -40,14 +40,21 @@ const canadaDiamondPoints = [
 
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
-    // Load diamond image and add to map
-    map.loadImage("diamond.png", (error, image) => {
-        if (error) {
-            console.error("Failed to load diamond image:", error);
-            return;
-        }
+    // Load diamond image using Image API
+    const diamondImagePath = new URL("diamond.png", window.location.href).href;
 
-        map.addImage("diamond-icon", image);
+    const img = new Image();
+    img.onload = () => {
+        // Create canvas to convert image to ImageData
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+
+        // Add image to map
+        map.addImage("diamond-icon", imageData);
 
         // Create diamond markers for each region
         const allDiamonds = [];
@@ -77,18 +84,17 @@ function initializeDiamonds(map) {
             });
         });
 
-        console.log("Total diamonds created:", allDiamonds.length);
-        console.log("Sample diamond points:", allDiamonds.slice(0, 3));
-
         // Add diamond source and layer to map
         addDiamondSource(map, allDiamonds);
         addDiamondLayer(map);
 
         // Setup location click handlers
         setupLocationClickHandlers(map);
-
-        console.log("Map loaded with", allDiamonds.length, "diamond markers across 3 regions");
-    });
+    };
+    img.onerror = () => {
+        console.error("Failed to load diamond image");
+    };
+    img.src = diamondImagePath;
 }
 
 // Add diamond source to map
@@ -100,8 +106,6 @@ function addDiamondSource(map, allDiamonds) {
             features: allDiamonds,
         },
     });
-
-    console.log("Diamond source added to map");
 }
 
 // Add diamond layer to map
@@ -144,8 +148,6 @@ function addDiamondLayer(map) {
             "icon-allow-overlap": true,
         },
     });
-
-    console.log("Diamond layer added");
 }
 
 // Setup location click handlers for zooming to regions
@@ -156,7 +158,9 @@ function setupLocationClickHandlers(map) {
         canada: { center: [-113.481, 53.6467], zoom: 19 },
     };
 
-    document.querySelectorAll(".location-info").forEach((element) => {
+    const elements = document.querySelectorAll(".location-info");
+
+    elements.forEach((element) => {
         element.addEventListener("click", () => {
             const region = element.dataset.region;
             const target = locationClicks[region];
