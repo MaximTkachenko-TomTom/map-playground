@@ -1,197 +1,678 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <title>Add a GeoJSON line</title>
+        <title>Diamond Scaling by Latitude - GeoJSON PoC</title>
         <meta
             property="og:description"
-            content="Add a GeoJSON line to a map using addSource, then style it using addLayer's paint properties."
+            content="Explore how diamond size appears at different latitudes (Brazil, Mexico, Canada)."
         />
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.css"
-        />
+        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.css" />
         <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
-        <script src="https://unpkg.com/@turf/turf@7.0.0/turf.min.js"></script>
         <script src="config.js"></script>
         <style>
             body {
                 margin: 0;
                 padding: 0;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             }
             html,
             body,
             #map {
                 height: 100%;
             }
+            #info {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                background: rgba(255, 255, 255, 0.95);
+                padding: 20px;
+                border-radius: 8px;
+                font-size: 13px;
+                max-width: 350px;
+                z-index: 1;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            }
+            #info h3 {
+                margin: 0 0 12px 0;
+                font-size: 15px;
+                font-weight: 600;
+            }
+            #info p {
+                margin: 8px 0;
+            }
+            .location-info {
+                padding: 10px;
+                margin: 10px 0;
+                background: #f5f5f5;
+                border-left: 4px solid #999;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .location-info:hover {
+                background: #ececec;
+                transform: translateX(2px);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            }
+            .location-info.brazil {
+                border-left-color: #2e7d32;
+            }
+            .location-info.mexico {
+                border-left-color: #f57c00;
+            }
+            .location-info.canada {
+                border-left-color: #1565c0;
+            }
+            .location-name {
+                font-weight: 600;
+                margin-bottom: 5px;
+            }
+            .location-coords {
+                font-size: 11px;
+                color: #666;
+            }
+            #measure-panel {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(255, 255, 255, 0.95);
+                padding: 15px;
+                border-radius: 8px;
+                font-size: 12px;
+                z-index: 1;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                min-width: 200px;
+            }
+            #measure-panel h4 {
+                margin: 0 0 10px 0;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            #measure-btn {
+                padding: 8px 12px;
+                background: #1976d2;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: 500;
+                margin-bottom: 10px;
+                width: 100%;
+                transition: background 0.2s ease;
+            }
+            #measure-btn:hover {
+                background: #1565c0;
+            }
+            #measure-btn.active {
+                background: #d32f2f;
+            }
+            #measure-info {
+                background: #f5f5f5;
+                padding: 10px;
+                border-radius: 4px;
+                font-family: monospace;
+                font-size: 11px;
+                line-height: 1.6;
+                color: #333;
+                max-height: 150px;
+                overflow-y: auto;
+            }
+            .measure-point {
+                padding: 4px 0;
+                border-bottom: 1px solid #eee;
+            }
+            .measure-point:last-child {
+                border-bottom: none;
+            }
+            #clear-measurements {
+                padding: 6px 12px;
+                background: #f44336;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 11px;
+                font-weight: 500;
+                margin-top: 8px;
+                width: 100%;
+                transition: background 0.2s ease;
+            }
+            #clear-measurements:hover {
+                background: #d32f2f;
+            }
         </style>
     </head>
     <body>
         <div id="map"></div>
+        <div id="info">
+            <h3>Diamond Scaling by Latitude</h3>
+            <p style="margin: 0 0 15px 0; font-size: 12px; color: #666">
+                Same degrees (0.0001°) at different latitudes appear different sizes on screen.
+            </p>
+
+            <div class="location-info brazil" data-region="brazil">
+                <div class="location-name">🇧🇷 Brazil (Near Equator)</div>
+                <div class="location-coords">Latitude: -15.7975°</div>
+            </div>
+
+            <div class="location-info mexico" data-region="mexico">
+                <div class="location-name">🇲🇽 Mexico (Mid-latitude)</div>
+                <div class="location-coords">Latitude: 19.4326°</div>
+            </div>
+
+            <div class="location-info canada" data-region="canada">
+                <div class="location-name">🇨🇦 Canada (High Latitude)</div>
+                <div class="location-coords">Latitude: 56.1304°</div>
+            </div>
+
+            <p style="margin-top: 15px; font-size: 11px; color: #666; border-top: 1px solid #ddd; padding-top: 10px">
+                <strong>Note:</strong> At higher latitudes, the same degree measurements in longitude appear smaller
+                because longitude lines converge towards the poles. Zoom to different regions to observe.
+            </p>
+        </div>
+
+        <div id="measure-panel">
+            <h4>📏 Distance Measure</h4>
+            <button id="measure-btn">Start Measuring</button>
+            <div id="measure-info">
+                <p style="margin: 0; color: #999">Click on map to add points</p>
+            </div>
+            <button id="clear-measurements">Clear</button>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 11px">
+                <strong>Map Coords:</strong>
+                <div id="map-coords" style="font-family: monospace; color: #666">Lat: -, Lng: -</div>
+            </div>
+        </div>
+
         <script>
             const map = new maplibregl.Map({
                 container: "map",
                 style: `https://api.tomtom.com/maps/orbis/assets/styles/*/style.json?key=${CONFIG.TOMTOM_API_KEY}&map=basic_street-light-driving&apiVersion=1`,
-                center: [-122.486052, 37.830348],
-                zoom: 15,
+                center: [-60, 10],
+                zoom: 4,
             });
 
             map.on("load", () => {
-                // Store route coordinates for reuse
-                const routeCoordinates = [
-                    [-122.48369693756104, 37.83381888486939],
-                    [-122.48348236083984, 37.83317489144141],
-                    [-122.48339653015138, 37.83270036637107],
-                    [-122.48356819152832, 37.832056363179625],
-                    [-122.48404026031496, 37.83114119107971],
-                    [-122.48404026031496, 37.83049717427869],
-                    [-122.48348236083984, 37.829920943955045],
-                    [-122.48356819152832, 37.82954808664175],
-                    [-122.48507022857666, 37.82944639795659],
-                    [-122.48610019683838, 37.82880236636284],
-                    [-122.48695850372314, 37.82931081282506],
-                    [-122.48700141906738, 37.83080223556934],
-                    [-122.48751640319824, 37.83168351665737],
-                    [-122.48803138732912, 37.832158048267786],
-                    [-122.48888969421387, 37.83297152392784],
-                    [-122.48987674713133, 37.83263257682617],
-                    [-122.49043464660643, 37.832937629287755],
-                    [-122.49125003814696, 37.832429207817725],
-                    [-122.49163627624512, 37.832564787218985],
-                    [-122.49223709106445, 37.83337825839438],
-                    [-122.49378204345702, 37.83368330777276],
+                // Define three regions with their coordinates and colors
+                const regions = [
+                    {
+                        name: "Brazil",
+                        color: "#2e7d32",
+                        outlineColor: "#1b5e20",
+                        center: [-51.9253, -15.7975], // São Paulo area
+                        baseSize: 0.000015,
+                    },
+                    {
+                        name: "Mexico",
+                        color: "#f57c00",
+                        outlineColor: "#e65100",
+                        center: [-101.5037, 19.4326], // Mexico City area
+                        baseSize: 0.000015,
+                    },
+                    {
+                        name: "Canada",
+                        color: "#1565c0",
+                        outlineColor: "#0d47a1",
+                        center: [-106.3468, 56.1304], // Alberta area
+                        baseSize: 0.000015,
+                    },
                 ];
 
-                map.addSource("route", {
+                // Create diamond points for each region
+                // 10 diamonds in a grid pattern for each location
+                const allDiamonds = [];
+
+                // Define hardcoded diamond points for Canada
+                const canadaDiamondPoints = [
+                    { lat: 53.646622, lng: -113.482579 },
+                    { lat: 53.646632, lng: -113.48167 },
+                    { lat: 53.646638, lng: -113.481021 },
+                    { lat: 53.646641, lng: -113.480366 },
+                    { lat: 53.64666, lng: -113.480004 },
+                    { lat: 53.646687, lng: -113.479328 },
+                    { lat: 53.64669, lng: -113.478403 },
+                ];
+
+                regions.forEach((region) => {
+                    const diamondPoints = [];
+
+                    // Use hardcoded points for Canada, grid pattern for others
+                    if (region.name === "Canada") {
+                        canadaDiamondPoints.forEach((point) => {
+                            diamondPoints.push({
+                                center: [point.lng, point.lat],
+                                size: region.baseSize,
+                                region: region.name,
+                                color: region.color,
+                                outlineColor: region.outlineColor,
+                            });
+                        });
+                    } else {
+                        // Grid pattern for Brazil and Mexico
+                        const spacing = 0.15;
+                        for (let row = 0; row < 2; row++) {
+                            for (let col = 0; col < 5; col++) {
+                                const lng = region.center[0] + (col - 2) * spacing;
+                                const lat = region.center[1] + (row - 0.5) * spacing;
+
+                                diamondPoints.push({
+                                    center: [lng, lat],
+                                    size: region.baseSize,
+                                    region: region.name,
+                                    color: region.color,
+                                    outlineColor: region.outlineColor,
+                                });
+                            }
+                        }
+                    }
+
+                    allDiamonds.push(...diamondPoints);
+                });
+
+                // Function to create 4 line segments that form a diamond outline
+                function createDiamondLines(center, size) {
+                    const [lng, lat] = center;
+                    const top = [lng, lat + size];
+                    const right = [lng + size, lat];
+                    const bottom = [lng, lat - size];
+                    const left = [lng - size, lat];
+
+                    return [
+                        [top, right], // top-right edge
+                        [right, bottom], // right-bottom edge
+                        [bottom, left], // bottom-left edge
+                        [left, top], // left-top edge
+                    ];
+                }
+
+                // Create FeatureCollection with all diamond line segments
+                const diamondLines = [];
+                allDiamonds.forEach((point, diamondIndex) => {
+                    const lines = createDiamondLines(point.center, point.size);
+                    lines.forEach((line, edgeIndex) => {
+                        diamondLines.push({
+                            type: "Feature",
+                            properties: {
+                                diamondId: diamondIndex,
+                                edgeId: edgeIndex,
+                                region: point.region,
+                                color: point.color,
+                                outlineColor: point.outlineColor,
+                            },
+                            geometry: {
+                                type: "LineString",
+                                coordinates: line,
+                            },
+                        });
+                    });
+                });
+
+                console.log("Total diamonds created:", allDiamonds.length);
+                console.log("Total diamond line segments:", diamondLines.length);
+                console.log("Sample diamond points:", allDiamonds.slice(0, 3));
+
+                // Add source for all diamonds
+                map.addSource("diamonds", {
+                    type: "geojson",
+                    data: {
+                        type: "FeatureCollection",
+                        features: diamondLines,
+                    },
+                });
+
+                console.log("Diamond source added to map");
+
+                // Add colored diamonds layer by region using data-driven styling
+                // map.addLayer({
+                //     id: "diamonds",
+                //     type: "line",
+                //     source: "diamonds",
+                //     paint: {
+                //         "line-color": "#FF0000",
+                //         "line-width": [
+                //             "interpolate",
+                //             ["exponential", 2],
+                //             ["zoom"],
+                //             3,
+                //             0.5,
+                //             5,
+                //             0.7,
+                //             7,
+                //             0.9,
+                //             10,
+                //             1,
+                //             12,
+                //             1.2,
+                //             13,
+                //             2,
+                //             14,
+                //             3,
+                //             15,
+                //             4,
+                //             16,
+                //             5,
+                //             17,
+                //             6,
+                //             18,
+                //             8,
+                //             20,
+                //             12,
+                //         ],
+                //     },
+                // });
+
+                // Add white outline layer for visibility
+                map.addLayer({
+                    id: "diamonds-outline",
+                    type: "line",
+                    source: "diamonds",
+                    paint: {
+                        "line-color": "#FFFFFF",
+                        "line-width": [
+                            "interpolate",
+                            ["exponential", 2],
+                            ["zoom"],
+                            3,
+                            0.25,
+                            5,
+                            0.35,
+                            7,
+                            0.45,
+                            10,
+                            0.5,
+                            12,
+                            0.6,
+                            13,
+                            1,
+                            14,
+                            1.5,
+                            15,
+                            2,
+                            16,
+                            2.5,
+                            17,
+                            3,
+                            18,
+                            4,
+                            20,
+                            6,
+                        ],
+                    },
+                });
+
+                console.log("Map loaded with", diamondLines.length, "diamond line segments across 3 regions");
+                console.log("Total diamonds:", allDiamonds.length);
+
+                // Add click handlers for location info blocks
+                const locationClicks = {
+                    brazil: { center: [-51.9253, -15.7975], zoom: 14 },
+                    mexico: { center: [-101.5037, 19.4326], zoom: 14 },
+                    canada: { center: [-113.481, 53.6467], zoom: 16 },
+                };
+
+                document.querySelectorAll(".location-info").forEach((element) => {
+                    element.addEventListener("click", () => {
+                        const region = element.dataset.region;
+                        const target = locationClicks[region];
+                        if (target) {
+                            map.flyTo({
+                                center: target.center,
+                                zoom: target.zoom,
+                                duration: 1500,
+                            });
+                        }
+                    });
+                });
+            });
+
+            // Distance measurement tool
+            let isMeasuring = false;
+            let measurePoints = [];
+            const measureBtn = document.getElementById("measure-btn");
+            const measureInfo = document.getElementById("measure-info");
+            const clearBtn = document.getElementById("clear-measurements");
+            const mapCoordsDiv = document.getElementById("map-coords");
+
+            // Display current map coordinates in real-time
+            map.on("mousemove", (e) => {
+                const { lng, lat } = e.lngLat;
+                mapCoordsDiv.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)} | Zoom: ${map.getZoom().toFixed(2)}`;
+            });
+
+            // Function to calculate distance between two points (in meters) using Haversine formula
+            function calculateDistance(lat1, lng1, lat2, lng2) {
+                const R = 6371000; // Earth radius in meters
+                const dLat = ((lat2 - lat1) * Math.PI) / 180;
+                const dLng = ((lng2 - lng1) * Math.PI) / 180;
+                const a =
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos((lat1 * Math.PI) / 180) *
+                        Math.cos((lat2 * Math.PI) / 180) *
+                        Math.sin(dLng / 2) *
+                        Math.sin(dLng / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+            // Function to format distance
+            function formatDistance(meters) {
+                if (meters >= 1000) {
+                    return (meters / 1000).toFixed(2) + " km";
+                }
+                return meters.toFixed(2) + " m";
+            }
+
+            // Toggle measurement mode
+            measureBtn.addEventListener("click", () => {
+                isMeasuring = !isMeasuring;
+                measureBtn.textContent = isMeasuring ? "Stop Measuring" : "Start Measuring";
+                measureBtn.classList.toggle("active");
+
+                if (!isMeasuring) {
+                    map.getCanvas().style.cursor = "default";
+                } else {
+                    map.getCanvas().style.cursor = "crosshair";
+                    measurePoints = [];
+                    initMeasureLayers();
+                    updateMeasureInfo();
+                }
+            });
+
+            // Clear measurements
+            clearBtn.addEventListener("click", () => {
+                measurePoints = [];
+                isMeasuring = false;
+                measureBtn.textContent = "Start Measuring";
+                measureBtn.classList.remove("active");
+                map.getCanvas().style.cursor = "default";
+                updateMeasureInfo();
+
+                // Clear the data but keep the layers
+                if (map.getSource("measure-points")) {
+                    map.getSource("measure-points").setData({
+                        type: "FeatureCollection",
+                        features: [],
+                    });
+                }
+                if (map.getSource("measure-lines")) {
+                    map.getSource("measure-lines").setData({
+                        type: "Feature",
+                        geometry: {
+                            type: "LineString",
+                            coordinates: [],
+                        },
+                    });
+                }
+            });
+
+            // Add points on map click
+            map.on("click", (e) => {
+                if (!isMeasuring) return;
+
+                const { lng, lat } = e.lngLat;
+                const zoom = map.getZoom();
+                console.log("Measurement point clicked:", { lat, lng, zoom });
+                measurePoints.push({ lat, lng, zoom });
+
+                // Update measure visualization
+                updateMeasureVisualization();
+                updateMeasureInfo();
+            });
+
+            // Update measure info display
+            function updateMeasureInfo() {
+                let html = "";
+
+                if (measurePoints.length === 0) {
+                    html = '<p style="margin: 0; color: #999;">Click on map to add points</p>';
+                } else {
+                    html += `<div class="measure-point"><strong>Points: ${measurePoints.length}</strong></div>`;
+
+                    // Show all points
+                    measurePoints.forEach((point, index) => {
+                        html += `<div class="measure-point">
+                            <strong>P${index + 1}:</strong> ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)} (Z${point.zoom?.toFixed(1) || "?"})
+                        </div>`;
+                    });
+
+                    // Calculate distances between consecutive points
+                    if (measurePoints.length > 1) {
+                        html +=
+                            '<div style="margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px;"><strong>Distances:</strong></div>';
+                        let totalDistance = 0;
+
+                        for (let i = 0; i < measurePoints.length - 1; i++) {
+                            const p1 = measurePoints[i];
+                            const p2 = measurePoints[i + 1];
+                            const dist = calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+                            totalDistance += dist;
+
+                            html += `<div class="measure-point">
+                                P${i + 1}-P${i + 2}: ${formatDistance(dist)}
+                            </div>`;
+                        }
+
+                        html += `<div style="margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px; font-weight: 600;">
+                            Total: ${formatDistance(totalDistance)}
+                        </div>`;
+                    }
+                }
+
+                measureInfo.innerHTML = html;
+            }
+
+            // Initialize measurement sources and layers
+            function initMeasureLayers() {
+                // Remove old layers if they exist
+                if (map.getLayer("measure-points")) {
+                    map.removeLayer("measure-points");
+                }
+                if (map.getLayer("measure-lines")) {
+                    map.removeLayer("measure-lines");
+                }
+                if (map.getSource("measure-points")) {
+                    map.removeSource("measure-points");
+                }
+                if (map.getSource("measure-lines")) {
+                    map.removeSource("measure-lines");
+                }
+
+                // Create points source
+                map.addSource("measure-points", {
+                    type: "geojson",
+                    data: {
+                        type: "FeatureCollection",
+                        features: [],
+                    },
+                });
+
+                map.addLayer({
+                    id: "measure-points",
+                    type: "circle",
+                    source: "measure-points",
+                    paint: {
+                        "circle-radius": 6,
+                        "circle-color": "#00FF00",
+                        "circle-stroke-color": "#FFFFFF",
+                        "circle-stroke-width": 2,
+                    },
+                });
+
+                // Create lines source
+                map.addSource("measure-lines", {
                     type: "geojson",
                     data: {
                         type: "Feature",
-                        properties: {},
                         geometry: {
                             type: "LineString",
-                            coordinates: routeCoordinates,
+                            coordinates: [],
                         },
                     },
                 });
+
                 map.addLayer({
-                    id: "route",
+                    id: "measure-lines",
                     type: "line",
-                    source: "route",
-                    layout: {
-                        "line-join": "round",
-                        "line-cap": "round",
-                    },
+                    source: "measure-lines",
                     paint: {
-                        "line-color": "#b61e1e",
-                        "line-width": 2,
+                        "line-color": "#00FF00",
+                        "line-width": 3,
+                        "line-dasharray": [5, 5],
                     },
                 });
 
-                // Create diamond SVG icon for restriction markers
-                const diamondSvg = `
-                    <svg width="20" height="30" viewBox="0 0 20 30" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M 10,2 L 18,15 L 10,28 L 2,15 Z" fill="#FF0000" stroke="#FFFFFF" stroke-width="2"/>
-                    </svg>
-                `;
-                const diamondImage = new Image(20, 30);
-                diamondImage.onerror = (err) => {
-                    console.error("Failed to load diamond image:", err);
-                };
-                diamondImage.onload = () => {
-                    console.log("Diamond image loaded successfully");
-                    map.addImage("diamond-icon", diamondImage);
-                    console.log("Diamond icon added to map");
+                console.log("Measure layers initialized");
+            }
 
-                    // Calculate restriction markers at 50m intervals along the route
-                    const lineString = turf.lineString(routeCoordinates);
-                    const length = turf.length(lineString, { units: "meters" });
-                    console.log("Route length:", length, "meters");
+            // Update measurement visualization on map
+            function updateMeasureVisualization() {
+                // Create line between points (GeoJSON uses [lng, lat])
+                const lineCoordinates = measurePoints.map((p) => [p.lng, p.lat]);
 
-                    const markers = [];
-                    // Start at 25m to center first marker, then every 50m
-                    for (let distance = 25; distance < length; distance += 50) {
-                        const point = turf.along(lineString, distance, {
-                            units: "meters",
-                        });
+                console.log("Updating visualization with points:", measurePoints);
+                console.log("Line coordinates:", lineCoordinates);
 
-                        // Calculate bearing for marker rotation
-                        const segment = turf.lineSlice(
-                            turf.along(lineString, Math.max(0, distance - 1), {
-                                units: "meters",
-                            }),
-                            turf.along(
-                                lineString,
-                                Math.min(length, distance + 1),
-                                {
-                                    units: "meters",
-                                },
-                            ),
-                            lineString,
-                        );
-                        const bearing = turf.bearing(
-                            segment.geometry.coordinates[0],
-                            segment.geometry.coordinates[
-                                segment.geometry.coordinates.length - 1
-                            ],
-                        );
+                // Update points data
+                const pointFeatures = measurePoints.map((p, index) => ({
+                    type: "Feature",
+                    properties: { index: index + 1 },
+                    geometry: {
+                        type: "Point",
+                        coordinates: [p.lng, p.lat],
+                    },
+                }));
 
-                        markers.push({
+                if (map.getSource("measure-points")) {
+                    map.getSource("measure-points").setData({
+                        type: "FeatureCollection",
+                        features: pointFeatures,
+                    });
+                }
+
+                // Update lines data
+                if (map.getSource("measure-lines")) {
+                    if (lineCoordinates.length > 1) {
+                        map.getSource("measure-lines").setData({
                             type: "Feature",
-                            geometry: point.geometry,
-                            properties: {
-                                bearing: bearing,
+                            geometry: {
+                                type: "LineString",
+                                coordinates: lineCoordinates,
+                            },
+                        });
+                    } else {
+                        map.getSource("measure-lines").setData({
+                            type: "Feature",
+                            geometry: {
+                                type: "LineString",
+                                coordinates: [],
                             },
                         });
                     }
-
-                    // Add source for restriction markers
-                    map.addSource("restriction-markers", {
-                        type: "geojson",
-                        data: {
-                            type: "FeatureCollection",
-                            features: markers,
-                        },
-                    });
-                    console.log(
-                        "Created",
-                        markers.length,
-                        "restriction markers",
-                    );
-
-                    // Add layer for restriction markers
-                    map.addLayer({
-                        id: "restriction-markers",
-                        type: "symbol",
-                        source: "restriction-markers",
-                        layout: {
-                            "icon-image": "diamond-icon",
-                            "icon-rotate": ["get", "bearing"],
-                            "icon-rotation-alignment": "map",
-                            "icon-allow-overlap": true,
-                            "icon-ignore-placement": true,
-                            // Size based on zoom to maintain ~2m x 3m physical size
-                            "icon-size": [
-                                "interpolate",
-                                ["exponential", 2],
-                                ["zoom"],
-                                10,
-                                0.1,
-                                15,
-                                0.5,
-                                18,
-                                1.5,
-                                20,
-                                3,
-                            ],
-                        },
-                    });
-                    console.log("Restriction markers layer added");
-                };
-                diamondImage.src =
-                    "data:image/svg+xml;base64," + btoa(diamondSvg);
-                console.log("Diamond image src set, waiting for load...");
-            });
+                }
+            }
         </script>
     </body>
 </html>
