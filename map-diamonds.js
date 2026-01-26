@@ -40,61 +40,47 @@ const canadaDiamondPoints = [
 
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
-    // Load diamond image using Image API
-    const diamondImagePath = new URL("diamond.png", window.location.href).href;
+    // Load diamond image and initialize map features
+    loadImageToMap("diamond.png", "diamond-icon", map)
+        .then(() => {
+            // Create diamond markers for each region
+            const allDiamonds = [];
 
-    const img = new Image();
-    img.onload = () => {
-        // Create canvas to convert image to ImageData
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+            regions.forEach((region) => {
+                let pointsToUse = [];
+                if (region.name === "Brazil") {
+                    pointsToUse = brazilDiamondPoints;
+                } else if (region.name === "Mexico") {
+                    pointsToUse = mexicoDiamondPoints;
+                } else if (region.name === "Canada") {
+                    pointsToUse = canadaDiamondPoints;
+                }
 
-        // Add image to map
-        map.addImage("diamond-icon", imageData);
-
-        // Create diamond markers for each region
-        const allDiamonds = [];
-
-        regions.forEach((region) => {
-            let pointsToUse = [];
-            if (region.name === "Brazil") {
-                pointsToUse = brazilDiamondPoints;
-            } else if (region.name === "Mexico") {
-                pointsToUse = mexicoDiamondPoints;
-            } else if (region.name === "Canada") {
-                pointsToUse = canadaDiamondPoints;
-            }
-
-            pointsToUse.forEach((point) => {
-                allDiamonds.push({
-                    type: "Feature",
-                    properties: {
-                        region: region.name,
-                        color: region.color,
-                    },
-                    geometry: {
-                        type: "Point",
-                        coordinates: [point.lng, point.lat],
-                    },
+                pointsToUse.forEach((point) => {
+                    allDiamonds.push({
+                        type: "Feature",
+                        properties: {
+                            region: region.name,
+                            color: region.color,
+                        },
+                        geometry: {
+                            type: "Point",
+                            coordinates: [point.lng, point.lat],
+                        },
+                    });
                 });
             });
+
+            // Add diamond source and layer to map
+            addDiamondSource(map, allDiamonds);
+            addDiamondLayer(map);
+
+            // Setup location click handlers
+            setupLocationClickHandlers(map);
+        })
+        .catch((error) => {
+            console.error("Failed to initialize diamonds:", error);
         });
-
-        // Add diamond source and layer to map
-        addDiamondSource(map, allDiamonds);
-        addDiamondLayer(map);
-
-        // Setup location click handlers
-        setupLocationClickHandlers(map);
-    };
-    img.onerror = () => {
-        console.error("Failed to load diamond image");
-    };
-    img.src = diamondImagePath;
 }
 
 // Add diamond source to map
