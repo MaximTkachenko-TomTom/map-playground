@@ -53,6 +53,7 @@ map-playground/
 - Use **Ctrl+R** shortcut to open map in browser (Zed task)
 - Test changes by refreshing the browser
 - Map is centered on San Francisco by default: `[-122.486052, 37.830348]`
+- **Do NOT commit changes unless explicitly asked** - always wait for user confirmation before running git commit
 
 ## Current Features
 
@@ -115,6 +116,13 @@ When suggesting code:
 - Include error handling for map load failures
 - Consider mobile responsiveness (viewport meta tag already set)
 - Follow MapLibre GL JS best practices and documentation
+
+## Git Workflow
+
+- **Never commit automatically** - always ask the user before committing
+- Make code changes and test them in the browser first
+- Wait for explicit "commit" instruction from the user before running git commands
+- This ensures the user reviews changes before they are committed
 
 ## Goals & Use Cases
 
