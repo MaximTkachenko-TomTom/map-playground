@@ -41,7 +41,7 @@ const canadaDiamondPoints = [
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
     // Load diamond image and initialize map features
-    loadImageToMap("diamond.png", "diamond-icon", map)
+    loadImageToMap(DIAMOND_IMAGE_DATA_URL, "diamond-icon", map)
         .then(() => {
             // Create diamond markers for each region
             const allDiamonds = [];
