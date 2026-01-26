@@ -151,28 +151,6 @@ function addDiamondSources(map, diamondLines, allDiamonds) {
     });
 
     console.log("Diamond source added to map");
-
-    // Add circle markers at diamond centers for debugging
-    const diamondCenters = allDiamonds.map((diamond) => ({
-        type: "Feature",
-        properties: {
-            region: diamond.region,
-        },
-        geometry: {
-            type: "Point",
-            coordinates: diamond.center,
-        },
-    }));
-
-    map.addSource("diamond-centers", {
-        type: "geojson",
-        data: {
-            type: "FeatureCollection",
-            features: diamondCenters,
-        },
-    });
-
-    console.log("Diamond center markers added");
 }
 
 // Add diamond layers to map
@@ -216,61 +194,7 @@ function addDiamondLayers(map) {
         },
     });
 
-    // Add circle markers layer
-    map.addLayer({
-        id: "diamond-centers",
-        type: "circle",
-        source: "diamond-centers",
-        paint: {
-            "circle-radius": 2,
-            "circle-color": "#FF0000",
-            "circle-stroke-color": "#FFFFFF",
-            "circle-stroke-width": 1,
-        },
-    });
-
     console.log("Diamond center layer added");
-
-    // Add white outline layer for visibility
-    map.addLayer({
-        id: "diamonds-outline",
-        type: "line",
-        source: "diamonds",
-        paint: {
-            "line-color": "#FFFFFF",
-            "line-width": [
-                "interpolate",
-                ["exponential", 2],
-                ["zoom"],
-                3,
-                0.25,
-                5,
-                0.35,
-                7,
-                0.45,
-                10,
-                0.5,
-                12,
-                0.6,
-                13,
-                1,
-                14,
-                1.5,
-                15,
-                2,
-                16,
-                2.5,
-                17,
-                3,
-                18,
-                4,
-                20,
-                6,
-            ],
-        },
-    });
-
-    console.log("Diamond outline layer added");
 }
 
 // Setup location click handlers for zooming to regions
@@ -278,7 +202,7 @@ function setupLocationClickHandlers(map) {
     const locationClicks = {
         brazil: { center: [-51.9253, -15.7975], zoom: 14 },
         mexico: { center: [-101.5037, 19.4326], zoom: 14 },
-        canada: { center: [-113.481, 53.6467], zoom: 16 },
+        canada: { center: [-113.481, 53.6467], zoom: 19 },
     };
 
     document.querySelectorAll(".location-info").forEach((element) => {
