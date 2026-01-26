@@ -26,7 +26,11 @@ const regions = [
     },
 ];
 
-// Define hardcoded diamond points for Canada
+// Define hardcoded diamond points for each region
+const brazilDiamondPoints = [];
+
+const mexicoDiamondPoints = [];
+
 const canadaDiamondPoints = [
     { lat: 53.646622, lng: -113.482579 },
     { lat: 53.646632, lng: -113.48167 },
@@ -45,35 +49,25 @@ function initializeDiamonds(map) {
     regions.forEach((region) => {
         const diamondPoints = [];
 
-        // Use hardcoded points for Canada, grid pattern for others
-        if (region.name === "Canada") {
-            canadaDiamondPoints.forEach((point) => {
-                diamondPoints.push({
-                    center: [point.lng, point.lat],
-                    size: region.baseSize,
-                    region: region.name,
-                    color: region.color,
-                    outlineColor: region.outlineColor,
-                });
-            });
-        } else {
-            // Grid pattern for Brazil and Mexico
-            const spacing = 0.15;
-            for (let row = 0; row < 2; row++) {
-                for (let col = 0; col < 5; col++) {
-                    const lng = region.center[0] + (col - 2) * spacing;
-                    const lat = region.center[1] + (row - 0.5) * spacing;
-
-                    diamondPoints.push({
-                        center: [lng, lat],
-                        size: region.baseSize,
-                        region: region.name,
-                        color: region.color,
-                        outlineColor: region.outlineColor,
-                    });
-                }
-            }
+        // Use hardcoded points for each region
+        let pointsToUse = [];
+        if (region.name === "Brazil") {
+            pointsToUse = brazilDiamondPoints;
+        } else if (region.name === "Mexico") {
+            pointsToUse = mexicoDiamondPoints;
+        } else if (region.name === "Canada") {
+            pointsToUse = canadaDiamondPoints;
         }
+
+        pointsToUse.forEach((point) => {
+            diamondPoints.push({
+                center: [point.lng, point.lat],
+                size: region.baseSize,
+                region: region.name,
+                color: region.color,
+                outlineColor: region.outlineColor,
+            });
+        });
 
         allDiamonds.push(...diamondPoints);
     });
