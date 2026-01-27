@@ -24,7 +24,16 @@ const regions = [
 ];
 
 // Define hardcoded diamond points for each region
-const brazilDiamondPoints = [];
+const brazilDiamondPoints = [
+    { lat: -15.780698, lng: -47.939108 },
+    { lat: -15.780099, lng: -47.938894 },
+    { lat: -15.779462, lng: -47.938682 },
+    { lat: -15.778987, lng: -47.938467 },
+    { lat: -15.778471, lng: -47.938025 },
+    { lat: -15.77821, lng: -47.937569 },
+    { lat: -15.77806, lng: -47.937137 },
+    { lat: -15.778014, lng: -47.93656 },
+];
 
 const mexicoDiamondPoints = [];
 
@@ -139,7 +148,7 @@ function addDiamondLayer(map) {
 // Setup location click handlers for zooming to regions
 function setupLocationClickHandlers(map) {
     const locationClicks = {
-        brazil: { center: [-51.9253, -15.7975], zoom: 14 },
+        brazil: { center: [-47.938, -15.779], zoom: 19 },
         mexico: { center: [-101.5037, 19.4326], zoom: 14 },
         canada: { center: [-113.481, 53.6467], zoom: 19 },
     };
