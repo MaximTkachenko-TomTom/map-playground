@@ -74,38 +74,29 @@ body,
     color: #666;
 }
 
-/* Measure Panel */
-#measure-panel {
+/* Toolbar */
+#toolbar {
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     background: rgba(255, 255, 255, 0.95);
-    padding: 15px;
+    padding: 8px;
     border-radius: 8px;
-    font-size: 12px;
     z-index: 1;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    min-width: 200px;
-}
-
-#measure-panel h4 {
-    margin: 0 0 10px 0;
-    font-size: 13px;
-    font-weight: 600;
+    display: flex;
+    gap: 8px;
 }
 
 /* Measure Button */
 #measure-btn {
-    padding: 8px 12px;
+    padding: 8px 10px;
     background: #1976d2;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    margin-bottom: 10px;
-    width: 100%;
+    font-size: 16px;
     transition: background 0.2s ease;
 }
 
@@ -114,46 +105,5 @@ body,
 }
 
 #measure-btn.active {
-    background: #d32f2f;
-}
-
-/* Measure Info */
-#measure-info {
-    background: #f5f5f5;
-    padding: 10px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 11px;
-    line-height: 1.6;
-    color: #333;
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-.measure-point {
-    padding: 4px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.measure-point:last-child {
-    border-bottom: none;
-}
-
-/* Clear Measurements Button */
-#clear-measurements {
-    padding: 6px 12px;
-    background: #f44336;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 500;
-    margin-top: 8px;
-    width: 100%;
-    transition: background 0.2s ease;
-}
-
-#clear-measurements:hover {
     background: #d32f2f;
 }

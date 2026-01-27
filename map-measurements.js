@@ -1,80 +1,15 @@
-// Distance Measurement Tool
-// This module handles all measurement-related functionality
+// Distance Measurement Tool - Canvas-based implementation
+// Uses HTML overlays for drawing lines and text
 
 let isMeasuring = false;
-let measurePoints = [];
+let firstPoint = null;
+let measurements = [];
+let measurementElements = [];
+let temporaryLine = null;
 
 // Get DOM elements
 const measureBtn = document.getElementById("measure-btn");
-const measureInfo = document.getElementById("measure-info");
-const clearBtn = document.getElementById("clear-measurements");
-const mapCoordsDiv = document.getElementById("map-coords");
-
-// Initialize measurement tool
-function initializeMeasurements(map) {
-    // Display current map coordinates in real-time
-    map.on("mousemove", (e) => {
-        const { lng, lat } = e.lngLat;
-        mapCoordsDiv.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)} | Zoom: ${map.getZoom().toFixed(2)}`;
-    });
-
-    // Toggle measurement mode
-    measureBtn.addEventListener("click", () => {
-        isMeasuring = !isMeasuring;
-        measureBtn.textContent = isMeasuring ? "Stop Measuring" : "Start Measuring";
-        measureBtn.classList.toggle("active");
-
-        if (!isMeasuring) {
-            map.getCanvas().style.cursor = "default";
-        } else {
-            map.getCanvas().style.cursor = "crosshair";
-            measurePoints = [];
-            initMeasureLayers(map);
-            updateMeasureInfo();
-        }
-    });
-
-    // Clear measurements
-    clearBtn.addEventListener("click", () => {
-        measurePoints = [];
-        isMeasuring = false;
-        measureBtn.textContent = "Start Measuring";
-        measureBtn.classList.remove("active");
-        map.getCanvas().style.cursor = "default";
-        updateMeasureInfo();
-
-        // Clear the data but keep the layers
-        if (map.getSource("measure-points")) {
-            map.getSource("measure-points").setData({
-                type: "FeatureCollection",
-                features: [],
-            });
-        }
-        if (map.getSource("measure-lines")) {
-            map.getSource("measure-lines").setData({
-                type: "Feature",
-                geometry: {
-                    type: "LineString",
-                    coordinates: [],
-                },
-            });
-        }
-    });
-
-    // Add points on map click
-    map.on("click", (e) => {
-        if (!isMeasuring) return;
-
-        const { lng, lat } = e.lngLat;
-        const zoom = map.getZoom();
-        console.log("Measurement point clicked:", { lat, lng, zoom });
-        measurePoints.push({ lat, lng, zoom });
-
-        // Update measure visualization
-        updateMeasureVisualization(map);
-        updateMeasureInfo();
-    });
-}
+const mapContainer = document.getElementById("map");
 
 // Calculate distance between two points (in meters) using Haversine formula
 function calculateDistance(lat1, lng1, lat2, lng2) {
@@ -93,157 +28,254 @@ function formatDistance(meters) {
     if (meters >= 1000) {
         return (meters / 1000).toFixed(2) + " km";
     }
-    return meters.toFixed(2) + " m";
+    return meters.toFixed(0) + " m";
 }
 
-// Update measure info display
-function updateMeasureInfo() {
-    let html = "";
+// Convert lat/lng to screen coordinates
+function lngLatToScreenCoords(map, lng, lat) {
+    const canvas = map.getCanvas();
+    const point = map.project([lng, lat]);
+    return { x: point.x, y: point.y };
+}
 
-    if (measurePoints.length === 0) {
-        html = '<p style="margin: 0; color: #999;">Click on map to add points</p>';
-    } else {
-        html += `<div class="measure-point"><strong>Points: ${measurePoints.length}</strong></div>`;
+// Create SVG line element for measurement
+function createMeasurementLine(map, point1, point2, distance, measurementId) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position = "absolute";
+    svg.style.top = "0";
+    svg.style.left = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.pointerEvents = "none";
+    svg.setAttribute("width", mapContainer.offsetWidth);
+    svg.setAttribute("height", mapContainer.offsetHeight);
 
-        // Show all points
-        measurePoints.forEach((point, index) => {
-            html += `<div class="measure-point">
-                <strong>P${index + 1}:</strong> ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)} (Z${point.zoom?.toFixed(1) || "?"})
-            </div>`;
-        });
+    const coords1 = lngLatToScreenCoords(map, point1.lng, point1.lat);
+    const coords2 = lngLatToScreenCoords(map, point2.lng, point2.lat);
 
-        // Calculate distances between consecutive points
-        if (measurePoints.length > 1) {
-            html +=
-                '<div style="margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px;"><strong>Distances:</strong></div>';
-            let totalDistance = 0;
+    // Draw line
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", coords1.x);
+    line.setAttribute("y1", coords1.y);
+    line.setAttribute("x2", coords2.x);
+    line.setAttribute("y2", coords2.y);
+    line.setAttribute("stroke", "#000000");
+    line.setAttribute("stroke-width", "2");
+    line.setAttribute("stroke-dasharray", "4,4");
+    line.style.cursor = "pointer";
+    line.dataset.measurementId = measurementId;
+    svg.appendChild(line);
 
-            for (let i = 0; i < measurePoints.length - 1; i++) {
-                const p1 = measurePoints[i];
-                const p2 = measurePoints[i + 1];
-                const dist = calculateDistance(p1.lat, p1.lng, p2.lat, p2.lng);
-                totalDistance += dist;
+    // Draw endpoint circles
+    const circle1 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle1.setAttribute("cx", coords1.x);
+    circle1.setAttribute("cy", coords1.y);
+    circle1.setAttribute("r", "5");
+    circle1.setAttribute("fill", "#000000");
+    circle1.setAttribute("stroke", "#FFFFFF");
+    circle1.setAttribute("stroke-width", "2");
+    svg.appendChild(circle1);
 
-                html += `<div class="measure-point">
-                    P${i + 1}-P${i + 2}: ${formatDistance(dist)}
-                </div>`;
-            }
+    const circle2 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle2.setAttribute("cx", coords2.x);
+    circle2.setAttribute("cy", coords2.y);
+    circle2.setAttribute("r", "5");
+    circle2.setAttribute("fill", "#000000");
+    circle2.setAttribute("stroke", "#FFFFFF");
+    circle2.setAttribute("stroke-width", "2");
+    svg.appendChild(circle2);
 
-            html += `<div style="margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px; font-weight: 600;">
-                Total: ${formatDistance(totalDistance)}
-            </div>`;
+    // Draw distance text at midpoint
+    const midX = (coords1.x + coords2.x) / 2;
+    const midY = (coords1.y + coords2.y) / 2;
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", midX);
+    text.setAttribute("y", midY);
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("font-size", "18");
+    text.setAttribute("fill", "#000000");
+    text.setAttribute("stroke", "#FFFFFF");
+    text.setAttribute("stroke-width", "3");
+    text.setAttribute("paint-order", "stroke");
+    text.style.cursor = "pointer";
+    text.style.pointerEvents = "auto";
+    text.dataset.measurementId = measurementId;
+    text.textContent = formatDistance(distance);
+    svg.appendChild(text);
+
+    line.style.pointerEvents = "auto";
+
+    // Add click handlers for removal
+    const removeHandler = () => {
+        removeMeasurement(map, measurementId);
+    };
+    line.addEventListener("click", removeHandler);
+    text.addEventListener("click", removeHandler);
+
+    mapContainer.appendChild(svg);
+    return svg;
+}
+
+// Create temporary line while measuring
+function createTemporaryLine(map, point1, point2, distance) {
+    // Remove old temporary line if exists
+    if (temporaryLine) {
+        temporaryLine.remove();
+    }
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.style.position = "absolute";
+    svg.style.top = "0";
+    svg.style.left = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.pointerEvents = "none";
+    svg.setAttribute("width", mapContainer.offsetWidth);
+    svg.setAttribute("height", mapContainer.offsetHeight);
+
+    const coords1 = lngLatToScreenCoords(map, point1.lng, point1.lat);
+    const coords2 = lngLatToScreenCoords(map, point2.lng, point2.lat);
+
+    // Draw temporary line
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", coords1.x);
+    line.setAttribute("y1", coords1.y);
+    line.setAttribute("x2", coords2.x);
+    line.setAttribute("y2", coords2.y);
+    line.setAttribute("stroke", "#000000");
+    line.setAttribute("stroke-width", "2");
+    line.setAttribute("stroke-dasharray", "4,4");
+    svg.appendChild(line);
+
+    // Draw first point indicator
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", coords1.x);
+    circle.setAttribute("cy", coords1.y);
+    circle.setAttribute("r", "6");
+    circle.setAttribute("fill", "#000000");
+    circle.setAttribute("stroke", "#FFFFFF");
+    circle.setAttribute("stroke-width", "2");
+    svg.appendChild(circle);
+
+    // Draw distance text at midpoint
+    const midX = (coords1.x + coords2.x) / 2;
+    const midY = (coords1.y + coords2.y) / 2;
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", midX);
+    text.setAttribute("y", midY);
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("font-size", "18");
+    text.setAttribute("fill", "#000000");
+    text.setAttribute("stroke", "#FFFFFF");
+    text.setAttribute("stroke-width", "3");
+    text.setAttribute("paint-order", "stroke");
+    text.textContent = formatDistance(distance);
+    svg.appendChild(text);
+
+    mapContainer.appendChild(svg);
+    temporaryLine = svg;
+}
+
+// Clear temporary line
+function clearTemporaryLine() {
+    if (temporaryLine) {
+        temporaryLine.remove();
+        temporaryLine = null;
+    }
+}
+
+// Remove a measurement
+function removeMeasurement(map, measurementId) {
+    // Find and remove the SVG element
+    const svgs = mapContainer.querySelectorAll("svg");
+    svgs.forEach((svg) => {
+        const hasMatch = svg.querySelector(`[data-measurement-id="${measurementId}"]`);
+        if (hasMatch) {
+            svg.remove();
         }
-    }
+    });
 
-    measureInfo.innerHTML = html;
+    // Remove from measurements array
+    measurements = measurements.filter((m) => m.id !== measurementId);
 }
 
-// Initialize measurement sources and layers
-function initMeasureLayers(map) {
-    // Remove old layers if they exist
-    if (map.getLayer("measure-points")) {
-        map.removeLayer("measure-points");
-    }
-    if (map.getLayer("measure-lines")) {
-        map.removeLayer("measure-lines");
-    }
-    if (map.getSource("measure-points")) {
-        map.removeSource("measure-points");
-    }
-    if (map.getSource("measure-lines")) {
-        map.removeSource("measure-lines");
-    }
+// Initialize measurement tool
+function initializeMeasurements(map) {
+    // Toggle measurement mode
+    measureBtn.addEventListener("click", () => {
+        isMeasuring = !isMeasuring;
+        measureBtn.classList.toggle("active");
 
-    // Create points source
-    map.addSource("measure-points", {
-        type: "geojson",
-        data: {
-            type: "FeatureCollection",
-            features: [],
-        },
-    });
-
-    map.addLayer({
-        id: "measure-points",
-        type: "circle",
-        source: "measure-points",
-        paint: {
-            "circle-radius": 6,
-            "circle-color": "#00FF00",
-            "circle-stroke-color": "#FFFFFF",
-            "circle-stroke-width": 2,
-        },
-    });
-
-    // Create lines source
-    map.addSource("measure-lines", {
-        type: "geojson",
-        data: {
-            type: "Feature",
-            geometry: {
-                type: "LineString",
-                coordinates: [],
-            },
-        },
-    });
-
-    map.addLayer({
-        id: "measure-lines",
-        type: "line",
-        source: "measure-lines",
-        paint: {
-            "line-color": "#00FF00",
-            "line-width": 3,
-            "line-dasharray": [5, 5],
-        },
-    });
-
-    console.log("Measure layers initialized");
-}
-
-// Update measurement visualization on map
-function updateMeasureVisualization(map) {
-    // Create line between points (GeoJSON uses [lng, lat])
-    const lineCoordinates = measurePoints.map((p) => [p.lng, p.lat]);
-
-    console.log("Updating visualization with points:", measurePoints);
-    console.log("Line coordinates:", lineCoordinates);
-
-    // Update points data
-    const pointFeatures = measurePoints.map((p, index) => ({
-        type: "Feature",
-        properties: { index: index + 1 },
-        geometry: {
-            type: "Point",
-            coordinates: [p.lng, p.lat],
-        },
-    }));
-
-    if (map.getSource("measure-points")) {
-        map.getSource("measure-points").setData({
-            type: "FeatureCollection",
-            features: pointFeatures,
-        });
-    }
-
-    // Update lines data
-    if (map.getSource("measure-lines")) {
-        if (lineCoordinates.length > 1) {
-            map.getSource("measure-lines").setData({
-                type: "Feature",
-                geometry: {
-                    type: "LineString",
-                    coordinates: lineCoordinates,
-                },
-            });
+        if (isMeasuring) {
+            map.getCanvas().style.cursor = "crosshair";
+            firstPoint = null;
         } else {
-            map.getSource("measure-lines").setData({
-                type: "Feature",
-                geometry: {
-                    type: "LineString",
-                    coordinates: [],
-                },
-            });
+            map.getCanvas().style.cursor = "default";
+            clearTemporaryLine();
         }
-    }
+    });
+
+    // Track mouse movement to show live distance
+    map.on("mousemove", (e) => {
+        if (!isMeasuring || !firstPoint) return;
+
+        const { lng, lat } = e.lngLat;
+        const distance = calculateDistance(firstPoint.lat, firstPoint.lng, lat, lng);
+        createTemporaryLine(map, firstPoint, { lat, lng }, distance);
+    });
+
+    // Add points on map click
+    map.on("click", (e) => {
+        if (!isMeasuring) return;
+
+        const { lng, lat } = e.lngLat;
+
+        if (!firstPoint) {
+            // First point placed
+            firstPoint = { lat, lng };
+        } else {
+            // Second point placed - finalize measurement
+            const secondPoint = { lat, lng };
+            const distance = calculateDistance(firstPoint.lat, firstPoint.lng, secondPoint.lat, secondPoint.lng);
+
+            // Create permanent measurement
+            const measurement = {
+                id: String(Date.now()),
+                point1: firstPoint,
+                point2: secondPoint,
+                distance: distance,
+            };
+            measurements.push(measurement);
+
+            // Draw the permanent line
+            createMeasurementLine(map, firstPoint, secondPoint, distance, measurement.id);
+
+            // Clear temporary line
+            clearTemporaryLine();
+
+            // Reset for next measurement
+            firstPoint = null;
+        }
+    });
+
+    // Redraw measurements on map move/zoom
+    map.on("move", () => {
+        // Remove all SVGs and redraw them
+        const svgs = Array.from(mapContainer.querySelectorAll("svg"));
+        svgs.forEach((svg) => svg.remove());
+
+        // Redraw temporary line if active
+        if (isMeasuring && firstPoint) {
+            // This will be redrawn on next mousemove
+        }
+
+        // Redraw all measurements
+        measurements.forEach((measurement) => {
+            createMeasurementLine(map, measurement.point1, measurement.point2, measurement.distance, measurement.id);
+        });
+    });
 }
