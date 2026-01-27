@@ -89,6 +89,7 @@ function initializeDiamonds(map) {
                         properties: {
                             region: region.name,
                             color: region.color,
+                            width_coefficient: computeWidthCoefficient(point.lat),
                         },
                         geometry: {
                             type: "Point",
@@ -138,7 +139,7 @@ function addDiamondLayer(map) {
         source: "diamond-lines",
         paint: {
             "line-color": "#f66",
-            "line-opacity": 1,
+            "line-opacity": 0.3,
             "line-width": [
                 "interpolate",
                 ["exponential", 2],
@@ -163,9 +164,9 @@ function addDiamondLayer(map) {
                 ["exponential", 2],
                 ["zoom"],
                 15,
-                ["*", ["pow", 2, 15], 3.0],
+                ["*", 32768, ["get", "width_coefficient"], 0.06],
                 22,
-                ["*", ["pow", 2, 22], 3.0],
+                ["*", 4.1943e6, ["get", "width_coefficient"], 0.06],
             ],
             "icon-allow-overlap": true,
         },
