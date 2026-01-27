@@ -1,5 +1,5 @@
 // Diamond Markers - Region definitions and rendering
-// This module handles all diamond-related functionality using image-based markers
+// This module handles all diamond-related functionality using symbol layer with line placement
 
 // Constants for width coefficient calculation
 const DEGREE_TO_RADIAN = Math.PI / 180;
@@ -67,40 +67,16 @@ const canadaDiamondPoints = [
 
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
-    // Load diamond image and initialize map features
+    // Load diamond image and use it as symbol icon
     loadImageToMap(DIAMOND_IMAGE_DATA_URL, "diamond-icon", map)
         .then(() => {
-            // Create diamond markers for each region
-            const allDiamonds = [];
+            // Create diamond lines
+            const diamondLines = createDiamondLines();
 
-            regions.forEach((region) => {
-                let pointsToUse = [];
-                if (region.name === "Brazil") {
-                    pointsToUse = brazilDiamondPoints;
-                } else if (region.name === "Mexico") {
-                    pointsToUse = mexicoDiamondPoints;
-                } else if (region.name === "Canada") {
-                    pointsToUse = canadaDiamondPoints;
-                }
+            // Add diamond lines source
+            addDiamondSource(map, diamondLines);
 
-                pointsToUse.forEach((point) => {
-                    allDiamonds.push({
-                        type: "Feature",
-                        properties: {
-                            region: region.name,
-                            color: region.color,
-                            width_coefficient: computeWidthCoefficient(point.lat),
-                        },
-                        geometry: {
-                            type: "Point",
-                            coordinates: [point.lng, point.lat],
-                        },
-                    });
-                });
-            });
-
-            // Add diamond source and layer to map
-            addDiamondSource(map, allDiamonds);
+            // Add diamond symbol layer with line placement
             addDiamondLayer(map);
 
             // Setup location click handlers
@@ -112,52 +88,21 @@ function initializeDiamonds(map) {
 }
 
 // Add diamond source to map
-function addDiamondSource(map, allDiamonds) {
+function addDiamondSource(map, diamondLines) {
     map.addSource("diamonds", {
-        type: "geojson",
-        data: {
-            type: "FeatureCollection",
-            features: allDiamonds,
-        },
-    });
-}
-
-// Add diamond layer to map
-function addDiamondLayer(map) {
-    // Create lines connecting diamonds within each region
-    const diamondLines = createDiamondLines();
-
-    // Add line source and layer
-    map.addSource("diamond-lines", {
         type: "geojson",
         data: diamondLines,
     });
+}
 
-    map.addLayer({
-        id: "diamond-lines-layer",
-        type: "line",
-        source: "diamond-lines",
-        paint: {
-            "line-color": "#f66",
-            "line-opacity": 0.3,
-            "line-width": [
-                "interpolate",
-                ["exponential", 2],
-                ["zoom"],
-                15,
-                ["*", 32768, ["get", "width_coefficient"], 3.0],
-                22,
-                ["*", 4.1943e6, ["get", "width_coefficient"], 3.0],
-            ],
-        },
-    });
-
-    // Add diamond symbol layer
+// Add diamond symbol layer with line placement for orientation
+function addDiamondLayer(map) {
     map.addLayer({
         id: "diamonds",
         type: "symbol",
         source: "diamonds",
         layout: {
+            "symbol-placement": "line",
             "icon-image": "diamond-icon",
             "icon-size": [
                 "interpolate",
@@ -168,6 +113,9 @@ function addDiamondLayer(map) {
                 22,
                 ["*", 4.1943e6, ["get", "width_coefficient"], 0.06],
             ],
+            "icon-rotate": 90,
+            "icon-rotation-alignment": "map",
+            "symbol-spacing": 100,
             "icon-allow-overlap": true,
         },
     });
