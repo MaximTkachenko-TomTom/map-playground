@@ -101,6 +101,7 @@ function addDiamondLayer(map) {
         id: "diamonds",
         type: "symbol",
         source: "diamonds",
+        minzoom: 17,
         layout: {
             "symbol-placement": "line",
             "icon-image": "diamond-icon",
@@ -115,8 +116,8 @@ function addDiamondLayer(map) {
             ],
             "icon-rotate": 90,
             "icon-rotation-alignment": "map",
-            "symbol-spacing": 100,
-            "icon-allow-overlap": true,
+            "symbol-spacing": 400,
+            "icon-allow-overlap": false,
         },
     });
 }
