@@ -1,6 +1,24 @@
 // Diamond Markers - Region definitions and rendering
 // This module handles all diamond-related functionality using image-based markers
 
+// Constants for width coefficient calculation
+const DEGREE_TO_RADIAN = Math.PI / 180;
+const EARTH_EQUATOR_IN_METERS = 40075016.686;
+const IDEAL_TILE_SIZE_IN_PIXELS = 256;
+
+// Compute width coefficient based on latitude
+function computeWidthCoefficient(latitude) {
+    const latitudeRadian = latitude * DEGREE_TO_RADIAN;
+    let cosLatitude = Math.cos(latitudeRadian);
+
+    // Avoid division by zero at poles
+    if (Math.abs(cosLatitude) < 1e-10) {
+        cosLatitude = 1e-10;
+    }
+
+    return IDEAL_TILE_SIZE_IN_PIXELS / (EARTH_EQUATOR_IN_METERS * cosLatitude);
+}
+
 // Define three regions with their coordinates and colors
 const regions = [
     {
@@ -119,9 +137,17 @@ function addDiamondLayer(map) {
         type: "line",
         source: "diamond-lines",
         paint: {
-            "line-color": "#fff",
+            "line-color": "#f66",
             "line-opacity": 1,
-            "line-width": ["interpolate", ["exponential", 2], ["zoom"], 15, 6, 22, 3],
+            "line-width": [
+                "interpolate",
+                ["exponential", 2],
+                ["zoom"],
+                15,
+                ["*", 32768, ["get", "width_coefficient"], 3.0],
+                22,
+                ["*", 4.1943e6, ["get", "width_coefficient"], 3.0],
+            ],
         },
     });
 
@@ -152,9 +178,10 @@ function createDiamondLines() {
 
     // Connect Brazil diamonds
     if (brazilDiamondPoints.length > 1) {
+        const widthCoefficient = computeWidthCoefficient(brazilDiamondPoints[0].lat);
         features.push({
             type: "Feature",
-            properties: { region: "Brazil" },
+            properties: { region: "Brazil", width_coefficient: widthCoefficient },
             geometry: {
                 type: "LineString",
                 coordinates: brazilDiamondPoints.map((p) => [p.lng, p.lat]),
@@ -164,9 +191,10 @@ function createDiamondLines() {
 
     // Connect Canada diamonds
     if (canadaDiamondPoints.length > 1) {
+        const widthCoefficient = computeWidthCoefficient(canadaDiamondPoints[0].lat);
         features.push({
             type: "Feature",
-            properties: { region: "Canada" },
+            properties: { region: "Canada", width_coefficient: widthCoefficient },
             geometry: {
                 type: "LineString",
                 coordinates: canadaDiamondPoints.map((p) => [p.lng, p.lat]),
@@ -176,9 +204,10 @@ function createDiamondLines() {
 
     // Connect Mexico diamonds when available
     if (mexicoDiamondPoints.length > 1) {
+        const widthCoefficient = computeWidthCoefficient(mexicoDiamondPoints[0].lat);
         features.push({
             type: "Feature",
-            properties: { region: "Mexico" },
+            properties: { region: "Mexico", width_coefficient: widthCoefficient },
             geometry: {
                 type: "LineString",
                 coordinates: mexicoDiamondPoints.map((p) => [p.lng, p.lat]),
