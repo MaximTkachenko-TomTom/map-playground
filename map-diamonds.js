@@ -105,6 +105,27 @@ function addDiamondSource(map, allDiamonds) {
 
 // Add diamond layer to map
 function addDiamondLayer(map) {
+    // Create lines connecting diamonds within each region
+    const diamondLines = createDiamondLines();
+
+    // Add line source and layer
+    map.addSource("diamond-lines", {
+        type: "geojson",
+        data: diamondLines,
+    });
+
+    map.addLayer({
+        id: "diamond-lines-layer",
+        type: "line",
+        source: "diamond-lines",
+        paint: {
+            "line-color": "#fff",
+            "line-opacity": 1,
+            "line-width": ["interpolate", ["exponential", 2], ["zoom"], 15, 6, 22, 3],
+        },
+    });
+
+    // Add diamond symbol layer
     map.addLayer({
         id: "diamonds",
         type: "symbol",
@@ -115,34 +136,60 @@ function addDiamondLayer(map) {
                 "interpolate",
                 ["exponential", 2],
                 ["zoom"],
-                3,
-                0.0125,
-                5,
-                0.01875,
-                7,
-                0.025,
-                10,
-                0.0375,
-                12,
-                0.05,
-                13,
-                0.0625,
-                14,
-                0.075,
                 15,
-                0.1,
-                16,
-                0.125,
-                17,
-                0.15,
-                18,
-                0.1875,
-                20,
-                0.25,
+                ["*", ["pow", 2, 15], 3.0],
+                22,
+                ["*", ["pow", 2, 22], 3.0],
             ],
             "icon-allow-overlap": true,
         },
     });
+}
+
+// Create GeoJSON lines connecting diamonds within each region
+function createDiamondLines() {
+    const features = [];
+
+    // Connect Brazil diamonds
+    if (brazilDiamondPoints.length > 1) {
+        features.push({
+            type: "Feature",
+            properties: { region: "Brazil" },
+            geometry: {
+                type: "LineString",
+                coordinates: brazilDiamondPoints.map((p) => [p.lng, p.lat]),
+            },
+        });
+    }
+
+    // Connect Canada diamonds
+    if (canadaDiamondPoints.length > 1) {
+        features.push({
+            type: "Feature",
+            properties: { region: "Canada" },
+            geometry: {
+                type: "LineString",
+                coordinates: canadaDiamondPoints.map((p) => [p.lng, p.lat]),
+            },
+        });
+    }
+
+    // Connect Mexico diamonds when available
+    if (mexicoDiamondPoints.length > 1) {
+        features.push({
+            type: "Feature",
+            properties: { region: "Mexico" },
+            geometry: {
+                type: "LineString",
+                coordinates: mexicoDiamondPoints.map((p) => [p.lng, p.lat]),
+            },
+        });
+    }
+
+    return {
+        type: "FeatureCollection",
+        features: features,
+    };
 }
 
 // Setup location click handlers for zooming to regions

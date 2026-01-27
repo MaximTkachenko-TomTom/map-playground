@@ -107,3 +107,20 @@ body,
 #measure-btn.active {
     background: #d32f2f;
 }
+
+/* Zoom Level Display */
+#zoom-display {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    min-width: 100px;
+}
+
+#zoom-level {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    font-family: "Courier New", monospace;
+}

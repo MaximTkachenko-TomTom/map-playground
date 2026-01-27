@@ -29,8 +29,25 @@ function initializeMap() {
         // Initialize measurement tool
         initializeMeasurements(map);
 
+        // Update zoom level display initially
+        updateZoomDisplay(map);
+
         console.log("Map fully initialized with diamonds and measurement tools");
     });
+
+    // Update zoom level in real-time
+    map.on("zoom", () => {
+        updateZoomDisplay(map);
+    });
+}
+
+// Update the zoom level display
+function updateZoomDisplay(map) {
+    const zoomLevel = map.getZoom();
+    const zoomDisplay = document.getElementById("zoom-level");
+    if (zoomDisplay) {
+        zoomDisplay.textContent = `Zoom: ${zoomLevel.toFixed(2)}`;
+    }
 }
 
 // Wait for DOM to be ready before initializing
