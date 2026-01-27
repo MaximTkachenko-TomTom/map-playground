@@ -205,8 +205,8 @@ function removeMeasurement(map, measurementId) {
 
 // Initialize measurement tool
 function initializeMeasurements(map) {
-    // Toggle measurement mode
-    measureBtn.addEventListener("click", () => {
+    // Function to toggle measurement mode
+    function toggleMeasurement() {
         isMeasuring = !isMeasuring;
         measureBtn.classList.toggle("active");
 
@@ -216,6 +216,16 @@ function initializeMeasurements(map) {
         } else {
             map.getCanvas().style.cursor = "default";
             clearTemporaryLine();
+        }
+    }
+
+    // Toggle measurement mode via button click
+    measureBtn.addEventListener("click", toggleMeasurement);
+
+    // Toggle measurement mode via 'm' hotkey
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "m" || e.key === "M") {
+            toggleMeasurement();
         }
     });
 
