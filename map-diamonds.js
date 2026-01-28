@@ -173,7 +173,15 @@ function addDiamondPointsLayer(map) {
         minzoom: 17,
         layout: {
             "icon-image": "diamond-icon",
-            "icon-size": ["interpolate", ["exponential", 2], ["zoom"], 15, 0.3, 22, 3],
+            "icon-size": [
+                "interpolate",
+                ["exponential", 2],
+                ["zoom"],
+                15,
+                ["*", 32768, ["get", "width_coefficient"], 0.03],
+                22,
+                ["*", 4.1943e6, ["get", "width_coefficient"], 0.03],
+            ],
             "icon-rotate": 90,
             "icon-rotation-alignment": "map",
             "icon-allow-overlap": false,
