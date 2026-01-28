@@ -66,12 +66,28 @@ const canadaDiamondPoints = [
 ];
 
 const canadaDiamondPoints2 = [
-    { lat: 53.646689, lng: -113.483834 },
-    { lat: 53.646692, lng: -113.483158 },
-    { lat: 53.646698, lng: -113.482472 },
-    { lat: 53.646695, lng: -113.481705 },
-    { lat: 53.646698, lng: -113.480951 },
-    { lat: 53.646702, lng: -113.480278 },
+    { lat: 53.648043, lng: -113.491033 },
+    { lat: 53.648236, lng: -113.490929 },
+    { lat: 53.648374, lng: -113.490736 },
+    { lat: 53.648487, lng: -113.490462 },
+    { lat: 53.648563, lng: -113.490162 },
+    { lat: 53.648595, lng: -113.489826 },
+    { lat: 53.648581, lng: -113.48944 },
+    { lat: 53.648506, lng: -113.489145 },
+    { lat: 53.648388, lng: -113.488896 },
+    { lat: 53.648245, lng: -113.488697 },
+    { lat: 53.648091, lng: -113.488595 },
+    { lat: 53.647942, lng: -113.488563 },
+    { lat: 53.647776, lng: -113.488584 },
+    { lat: 53.647624, lng: -113.488697 },
+    { lat: 53.64749, lng: -113.488861 },
+    { lat: 53.647376, lng: -113.489099 },
+    { lat: 53.647312, lng: -113.489335 },
+    { lat: 53.647277, lng: -113.489698 },
+    { lat: 53.647269, lng: -113.490006 },
+    { lat: 53.647264, lng: -113.490344 },
+    { lat: 53.647261, lng: -113.490634 },
+    { lat: 53.647261, lng: -113.490947 },
 ];
 
 // Create GeoJSON points from diamond coordinates
@@ -243,7 +259,7 @@ function setupLocationClickHandlers(map) {
     const locationClicks = {
         brazil: { center: [-47.938, -15.779], zoom: 19 },
         mexico: { center: [-101.5037, 19.4326], zoom: 14 },
-        canada: { center: [-113.481, 53.6467], zoom: 19 },
+        canada: { center: [-113.489909, 53.647888], zoom: 18 },
     };
 
     const elements = document.querySelectorAll(".location-info");
