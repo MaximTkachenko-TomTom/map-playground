@@ -90,19 +90,44 @@ const canadaDiamondPoints2 = [
     { lat: 53.647261, lng: -113.490947 },
 ];
 
+// Calculate bearing (angle in degrees) between two points
+function calculateBearing(point1, point2) {
+    const lat1 = point1.lat * DEGREE_TO_RADIAN;
+    const lat2 = point2.lat * DEGREE_TO_RADIAN;
+    const dLng = (point2.lng - point1.lng) * DEGREE_TO_RADIAN;
+
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    const bearing = Math.atan2(y, x) * (180 / Math.PI);
+
+    return (bearing + 360) % 360;
+}
+
 // Create GeoJSON points from diamond coordinates
 function createDiamondPoints(pointsArray, region) {
-    const features = pointsArray.map((point) => ({
-        type: "Feature",
-        properties: {
-            region: region,
-            width_coefficient: computeWidthCoefficient(point.lat),
-        },
-        geometry: {
-            type: "Point",
-            coordinates: [point.lng, point.lat],
-        },
-    }));
+    const features = pointsArray.map((point, index) => {
+        let bearing = 0;
+
+        // Calculate bearing to next point if available, otherwise use bearing from previous point
+        if (index < pointsArray.length - 1) {
+            bearing = calculateBearing(point, pointsArray[index + 1]);
+        } else if (index > 0) {
+            bearing = calculateBearing(pointsArray[index - 1], point);
+        }
+
+        return {
+            type: "Feature",
+            properties: {
+                region: region,
+                width_coefficient: computeWidthCoefficient(point.lat),
+                bearing: bearing,
+            },
+            geometry: {
+                type: "Point",
+                coordinates: [point.lng, point.lat],
+            },
+        };
+    });
 
     return {
         type: "FeatureCollection",
@@ -198,7 +223,7 @@ function addDiamondPointsLayer(map) {
                 22,
                 ["*", 4.1943e6, ["get", "width_coefficient"], 0.03],
             ],
-            "icon-rotate": 90,
+            "icon-rotate": ["get", "bearing"],
             "icon-rotation-alignment": "map",
             "icon-allow-overlap": false,
         },
