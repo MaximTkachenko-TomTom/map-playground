@@ -4,7 +4,7 @@
 // Constants for width coefficient calculation
 const DEGREE_TO_RADIAN = Math.PI / 180;
 const EARTH_EQUATOR_IN_METERS = 40075016.686;
-const IDEAL_TILE_SIZE_IN_PIXELS = 256;
+const IDEAL_TILE_SIZE_IN_PIXELS = 512;
 
 // Compute width coefficient based on latitude
 function computeWidthCoefficient(latitude) {
@@ -110,9 +110,9 @@ function addDiamondLayer(map) {
                 ["exponential", 2],
                 ["zoom"],
                 15,
-                ["*", 32768, ["get", "width_coefficient"], 0.06],
+                ["*", 32768, ["get", "width_coefficient"], 0.03],
                 22,
-                ["*", 4.1943e6, ["get", "width_coefficient"], 0.06],
+                ["*", 4.1943e6, ["get", "width_coefficient"], 0.03],
             ],
             "icon-rotate": 90,
             "icon-rotation-alignment": "map",
