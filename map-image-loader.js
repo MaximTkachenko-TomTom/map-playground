@@ -10,9 +10,10 @@ const DIAMOND_IMAGE_DATA_URL =
  * @param {string} imageDataUrl - Data URL of the image
  * @param {string} imageId - ID to register the image with the map
  * @param {maplibregl.Map} map - MapLibre GL JS map instance
+ * @param {number} opacity - Opacity level from 0 to 1 (default: 1)
  * @returns {Promise} - Resolves when image is loaded and added to map
  */
-function loadImageToMap(imageDataUrl, imageId, map) {
+function loadImageToMap(imageDataUrl, imageId, map, opacity = 0.66) {
     return new Promise((resolve, reject) => {
         const img = new Image();
 
@@ -25,6 +26,14 @@ function loadImageToMap(imageDataUrl, imageId, map) {
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0);
                 const imageData = ctx.getImageData(0, 0, img.width, img.height);
+
+                // Apply opacity by adjusting alpha channel
+                if (opacity < 1) {
+                    const data = imageData.data;
+                    for (let i = 3; i < data.length; i += 4) {
+                        data[i] = Math.round(data[i] * opacity);
+                    }
+                }
 
                 // Add image to map
                 map.addImage(imageId, imageData);
