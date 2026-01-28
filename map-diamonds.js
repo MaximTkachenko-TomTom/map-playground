@@ -1,24 +1,6 @@
 // Diamond Markers - Region definitions and rendering
 // This module handles all diamond-related functionality using symbol layer with line placement
 
-// Constants for width coefficient calculation
-const DEGREE_TO_RADIAN = Math.PI / 180;
-const EARTH_EQUATOR_IN_METERS = 40075016.686;
-const IDEAL_TILE_SIZE_IN_PIXELS = 512;
-
-// Compute Mercator scale factor based on latitude
-function computeMercatorScaleFactor(latitude) {
-    const latitudeRadian = latitude * DEGREE_TO_RADIAN;
-    let cosLatitude = Math.cos(latitudeRadian);
-
-    // Avoid division by zero at poles
-    if (Math.abs(cosLatitude) < 1e-10) {
-        cosLatitude = 1e-10;
-    }
-
-    return IDEAL_TILE_SIZE_IN_PIXELS / (EARTH_EQUATOR_IN_METERS * cosLatitude);
-}
-
 // Define three regions with their coordinates and colors
 const regions = [
     {
@@ -79,19 +61,6 @@ const canadaDiamondPoints = [
     { lat: 53.647261, lng: -113.490947 },
 ];
 
-// Calculate bearing (angle in degrees) between two points
-function calculateBearing(point1, point2) {
-    const lat1 = point1.lat * DEGREE_TO_RADIAN;
-    const lat2 = point2.lat * DEGREE_TO_RADIAN;
-    const dLng = (point2.lng - point1.lng) * DEGREE_TO_RADIAN;
-
-    const y = Math.sin(dLng) * Math.cos(lat2);
-    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
-    const bearing = Math.atan2(y, x) * (180 / Math.PI);
-
-    return (bearing + 360) % 360;
-}
-
 // Create GeoJSON points from diamond coordinates
 function createDiamondPointsData(pointsArray, region) {
     const features = pointsArray.map((point, index) => {
@@ -108,7 +77,7 @@ function createDiamondPointsData(pointsArray, region) {
             type: "Feature",
             properties: {
                 region: region,
-                mercator_scale_factor: computeMercatorScaleFactor(point.lat),
+                mercator_scale_factor: calculateMercatorScaleFactor(point.lat),
                 bearing: bearing,
             },
             geometry: {
@@ -130,7 +99,7 @@ function createDiamondLineData(pointsArray, region) {
         return { type: "FeatureCollection", features: [] };
     }
 
-    const widthCoefficient = computeMercatorScaleFactor(pointsArray[0].lat);
+    const mercatorScaleFactor = calculateMercatorScaleFactor(pointsArray[0].lat);
 
     return {
         type: "FeatureCollection",
@@ -139,7 +108,7 @@ function createDiamondLineData(pointsArray, region) {
                 type: "Feature",
                 properties: {
                     region: region,
-                    mercator_scale_factor: widthCoefficient,
+                    mercator_scale_factor: mercatorScaleFactor,
                 },
                 geometry: {
                     type: "LineString",
