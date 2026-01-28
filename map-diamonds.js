@@ -43,14 +43,16 @@ const regions = [
 
 // Define hardcoded diamond points for each region
 const brazilDiamondPoints = [
-    { lat: -15.780698, lng: -47.939108 },
-    { lat: -15.780099, lng: -47.938894 },
-    { lat: -15.779462, lng: -47.938682 },
-    { lat: -15.778987, lng: -47.938467 },
-    { lat: -15.778471, lng: -47.938025 },
-    { lat: -15.77821, lng: -47.937569 },
-    { lat: -15.77806, lng: -47.937137 },
-    { lat: -15.778014, lng: -47.93656 },
+    { lat: -15.778334, lng: -47.938623 },
+    { lat: -15.778133, lng: -47.938558 },
+    { lat: -15.777898, lng: -47.938483 },
+    { lat: -15.777689, lng: -47.938406 },
+    { lat: -15.777567, lng: -47.938357 },
+    { lat: -15.777446, lng: -47.938151 },
+    { lat: -15.777405, lng: -47.937899 },
+    { lat: -15.777464, lng: -47.937668 },
+    { lat: -15.777529, lng: -47.937478 },
+    { lat: -15.777591, lng: -47.937266 },
 ];
 
 const mexicoDiamondPoints = [];
@@ -125,50 +127,6 @@ function createDiamondPointsData(pointsArray, region) {
     };
 }
 
-// Initialize diamonds on map load
-function initializeDiamonds(map) {
-    // Load diamond image and use it as symbol icon
-    loadImageToMap(DIAMOND_IMAGE_DATA_URL, "diamond-icon", map)
-        .then(() => {
-            // Create line and symbol representations for canadaDiamondPoints2
-            const canadaPointsLine = createDiamondLineData(canadaDiamondPoints, "Canada");
-            const canadaPointsSymbols = createDiamondPointsData(canadaDiamondPoints, "Canada");
-
-            // Add both sources
-            addCanadaLineSource(map, canadaPointsLine);
-            addCanadaSymbolSource(map, canadaPointsSymbols);
-
-            // Add both layers
-            addCanadaLineLayer(map);
-            addCanadaSymbolLayer(map);
-
-            // Setup toggle for Canada diamond rendering modes
-            setupDiamondModeToggle(map);
-
-            // Setup location click handlers
-            setupLocationClickHandlers(map);
-        })
-        .catch((error) => {
-            console.error("Failed to initialize diamonds:", error);
-        });
-}
-
-// Add Canada line source
-function addCanadaLineSource(map, canadaLine) {
-    map.addSource("canada-line", {
-        type: "geojson",
-        data: canadaLine,
-    });
-}
-
-// Add Canada symbol source
-function addCanadaSymbolSource(map, canadaSymbols) {
-    map.addSource("canada-symbols", {
-        type: "geojson",
-        data: canadaSymbols,
-    });
-}
-
 // Create GeoJSON line from diamond points
 function createDiamondLineData(pointsArray, region) {
     if (pointsArray.length < 2) {
@@ -195,12 +153,52 @@ function createDiamondLineData(pointsArray, region) {
     };
 }
 
-// Add Canada line layer
-function addCanadaLineLayer(map) {
+// Initialize diamonds on map load
+function initializeDiamonds(map) {
+    // Load diamond image and use it as symbol icon
+    loadImageToMap(DIAMOND_IMAGE_DATA_URL, "diamond-icon", map)
+        .then(() => {
+            // Initialize Brazil diamonds
+            const brazilPointsLine = createDiamondLineData(brazilDiamondPoints, "Brazil");
+            const brazilPointsSymbols = createDiamondPointsData(brazilDiamondPoints, "Brazil");
+            addDiamondSource(map, "brazil-line", brazilPointsLine);
+            addDiamondSource(map, "brazil-symbols", brazilPointsSymbols);
+            addDiamondLineLayer(map, "brazil-line");
+            addDiamondSymbolLayer(map, "brazil-symbols");
+
+            // Initialize Canada diamonds
+            const canadaPointsLine = createDiamondLineData(canadaDiamondPoints, "Canada");
+            const canadaPointsSymbols = createDiamondPointsData(canadaDiamondPoints, "Canada");
+            addDiamondSource(map, "canada-line", canadaPointsLine);
+            addDiamondSource(map, "canada-symbols", canadaPointsSymbols);
+            addDiamondLineLayer(map, "canada-line");
+            addDiamondSymbolLayer(map, "canada-symbols");
+
+            // Setup toggle for diamond rendering modes
+            setupDiamondModeToggle(map);
+
+            // Setup location click handlers
+            setupLocationClickHandlers(map);
+        })
+        .catch((error) => {
+            console.error("Failed to initialize diamonds:", error);
+        });
+}
+
+// Add diamond source to map
+function addDiamondSource(map, sourceId, data) {
+    map.addSource(sourceId, {
+        type: "geojson",
+        data: data,
+    });
+}
+
+// Add diamond line layer (reusable for any region)
+function addDiamondLineLayer(map, sourceId) {
     map.addLayer({
-        id: "canada-line",
+        id: sourceId,
         type: "symbol",
-        source: "canada-line",
+        source: sourceId,
         minzoom: 17,
         layout: {
             "symbol-placement": "line",
@@ -222,12 +220,12 @@ function addCanadaLineLayer(map) {
     });
 }
 
-// Add Canada symbol layer
-function addCanadaSymbolLayer(map) {
+// Add diamond symbol layer (reusable for any region)
+function addDiamondSymbolLayer(map, sourceId) {
     map.addLayer({
-        id: "canada-symbols",
+        id: sourceId,
         type: "symbol",
-        source: "canada-symbols",
+        source: sourceId,
         minzoom: 17,
         layout: {
             "icon-image": "diamond-icon",
@@ -254,21 +252,50 @@ function setupDiamondModeToggle(map) {
     if (!modeSwitch) return;
 
     modeSwitch.addEventListener("change", (e) => {
+        const lineLayerIds = ["brazil-line", "canada-line"];
+        const symbolLayerIds = ["brazil-symbols", "canada-symbols"];
+
         if (e.target.checked) {
             // Checked = Symbol mode
-            map.setLayoutProperty("canada-line", "visibility", "none");
-            map.setLayoutProperty("canada-symbols", "visibility", "visible");
+            lineLayerIds.forEach((id) => {
+                if (map.getLayer(id)) {
+                    map.setLayoutProperty(id, "visibility", "none");
+                }
+            });
+            symbolLayerIds.forEach((id) => {
+                if (map.getLayer(id)) {
+                    map.setLayoutProperty(id, "visibility", "visible");
+                }
+            });
         } else {
             // Unchecked = Line mode
-            map.setLayoutProperty("canada-line", "visibility", "visible");
-            map.setLayoutProperty("canada-symbols", "visibility", "none");
+            lineLayerIds.forEach((id) => {
+                if (map.getLayer(id)) {
+                    map.setLayoutProperty(id, "visibility", "visible");
+                }
+            });
+            symbolLayerIds.forEach((id) => {
+                if (map.getLayer(id)) {
+                    map.setLayoutProperty(id, "visibility", "none");
+                }
+            });
         }
     });
 
     // Initialize with line mode visible (unchecked)
     modeSwitch.checked = false;
-    map.setLayoutProperty("canada-line", "visibility", "visible");
-    map.setLayoutProperty("canada-symbols", "visibility", "none");
+    const lineLayerIds = ["brazil-line", "canada-line"];
+    const symbolLayerIds = ["brazil-symbols", "canada-symbols"];
+    lineLayerIds.forEach((id) => {
+        if (map.getLayer(id)) {
+            map.setLayoutProperty(id, "visibility", "visible");
+        }
+    });
+    symbolLayerIds.forEach((id) => {
+        if (map.getLayer(id)) {
+            map.setLayoutProperty(id, "visibility", "none");
+        }
+    });
 }
 
 // Setup location click handlers for zooming to regions
