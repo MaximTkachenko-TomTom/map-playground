@@ -65,6 +65,35 @@ const canadaDiamondPoints = [
     { lat: 53.64669, lng: -113.478403 },
 ];
 
+const canadaDiamondPoints2 = [
+    { lat: 53.646689, lng: -113.483834 },
+    { lat: 53.646692, lng: -113.483158 },
+    { lat: 53.646698, lng: -113.482472 },
+    { lat: 53.646695, lng: -113.481705 },
+    { lat: 53.646698, lng: -113.480951 },
+    { lat: 53.646702, lng: -113.480278 },
+];
+
+// Create GeoJSON points from diamond coordinates
+function createDiamondPoints(pointsArray, region) {
+    const features = pointsArray.map((point) => ({
+        type: "Feature",
+        properties: {
+            region: region,
+            width_coefficient: computeWidthCoefficient(point.lat),
+        },
+        geometry: {
+            type: "Point",
+            coordinates: [point.lng, point.lat],
+        },
+    }));
+
+    return {
+        type: "FeatureCollection",
+        features: features,
+    };
+}
+
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
     // Load diamond image and use it as symbol icon
@@ -79,6 +108,11 @@ function initializeDiamonds(map) {
             // Add diamond symbol layer with line placement
             addDiamondLayer(map);
 
+            // Create and add point diamonds
+            const diamondPoints = createDiamondPoints(canadaDiamondPoints2, "Canada");
+            addDiamondPointsSource(map, diamondPoints);
+            addDiamondPointsLayer(map);
+
             // Setup location click handlers
             setupLocationClickHandlers(map);
         })
@@ -92,6 +126,14 @@ function addDiamondSource(map, diamondLines) {
     map.addSource("diamonds", {
         type: "geojson",
         data: diamondLines,
+    });
+}
+
+// Add diamond points source to map
+function addDiamondPointsSource(map, diamondPoints) {
+    map.addSource("diamonds-points", {
+        type: "geojson",
+        data: diamondPoints,
     });
 }
 
@@ -117,6 +159,23 @@ function addDiamondLayer(map) {
             "icon-rotate": 90,
             "icon-rotation-alignment": "map",
             "symbol-spacing": 400,
+            "icon-allow-overlap": false,
+        },
+    });
+}
+
+// Add diamond points symbol layer
+function addDiamondPointsLayer(map) {
+    map.addLayer({
+        id: "diamonds-points",
+        type: "symbol",
+        source: "diamonds-points",
+        minzoom: 17,
+        layout: {
+            "icon-image": "diamond-icon",
+            "icon-size": ["interpolate", ["exponential", 2], ["zoom"], 15, 0.3, 22, 3],
+            "icon-rotate": 90,
+            "icon-rotation-alignment": "map",
             "icon-allow-overlap": false,
         },
     });
