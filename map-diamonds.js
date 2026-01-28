@@ -56,16 +56,6 @@ const brazilDiamondPoints = [
 const mexicoDiamondPoints = [];
 
 const canadaDiamondPoints = [
-    { lat: 53.646622, lng: -113.482579 },
-    { lat: 53.646632, lng: -113.48167 },
-    { lat: 53.646638, lng: -113.481021 },
-    { lat: 53.646641, lng: -113.480366 },
-    { lat: 53.64666, lng: -113.480004 },
-    { lat: 53.646687, lng: -113.479328 },
-    { lat: 53.64669, lng: -113.478403 },
-];
-
-const canadaDiamondPoints2 = [
     { lat: 53.648043, lng: -113.491033 },
     { lat: 53.648236, lng: -113.490929 },
     { lat: 53.648374, lng: -113.490736 },
@@ -104,7 +94,7 @@ function calculateBearing(point1, point2) {
 }
 
 // Create GeoJSON points from diamond coordinates
-function createDiamondPoints(pointsArray, region) {
+function createDiamondPointsData(pointsArray, region) {
     const features = pointsArray.map((point, index) => {
         let bearing = 0;
 
@@ -140,22 +130,13 @@ function initializeDiamonds(map) {
     // Load diamond image and use it as symbol icon
     loadImageToMap(DIAMOND_IMAGE_DATA_URL, "diamond-icon", map)
         .then(() => {
-            // Create diamond lines
-            const diamondLines = createDiamondLines();
-
-            // Add diamond lines source
-            addDiamondSource(map, diamondLines);
-
-            // Add diamond symbol layer with line placement
-            addDiamondLayer(map);
-
             // Create line and symbol representations for canadaDiamondPoints2
-            const canadaPoints2Line = createDiamondLine(canadaDiamondPoints2, "Canada");
-            const canadaPoints2Symbols = createDiamondPoints(canadaDiamondPoints2, "Canada");
+            const canadaPointsLine = createDiamondLineData(canadaDiamondPoints, "Canada");
+            const canadaPointsSymbols = createDiamondPointsData(canadaDiamondPoints, "Canada");
 
             // Add both sources
-            addCanadaLineSource(map, canadaPoints2Line);
-            addCanadaSymbolSource(map, canadaPoints2Symbols);
+            addCanadaLineSource(map, canadaPointsLine);
+            addCanadaSymbolSource(map, canadaPointsSymbols);
 
             // Add both layers
             addCanadaLineLayer(map);
@@ -170,14 +151,6 @@ function initializeDiamonds(map) {
         .catch((error) => {
             console.error("Failed to initialize diamonds:", error);
         });
-}
-
-// Add diamond source to map
-function addDiamondSource(map, diamondLines) {
-    map.addSource("diamonds", {
-        type: "geojson",
-        data: diamondLines,
-    });
 }
 
 // Add Canada line source
@@ -196,43 +169,8 @@ function addCanadaSymbolSource(map, canadaSymbols) {
     });
 }
 
-// Add diamond points source to map (deprecated - kept for reference)
-function addDiamondPointsSource(map, diamondPoints) {
-    map.addSource("diamonds-points", {
-        type: "geojson",
-        data: diamondPoints,
-    });
-}
-
-// Add diamond symbol layer with line placement for orientation
-function addDiamondLayer(map) {
-    map.addLayer({
-        id: "diamonds",
-        type: "symbol",
-        source: "diamonds",
-        minzoom: 17,
-        layout: {
-            "symbol-placement": "line",
-            "icon-image": "diamond-icon",
-            "icon-size": [
-                "interpolate",
-                ["exponential", 2],
-                ["zoom"],
-                15,
-                ["*", 32768, ["get", "mercator_scale_factor"], 0.03],
-                22,
-                ["*", 4.1943e6, ["get", "mercator_scale_factor"], 0.03],
-            ],
-            "icon-rotate": 90,
-            "icon-rotation-alignment": "map",
-            "symbol-spacing": 400,
-            "icon-allow-overlap": false,
-        },
-    });
-}
-
 // Create GeoJSON line from diamond points
-function createDiamondLine(pointsArray, region) {
+function createDiamondLineData(pointsArray, region) {
     if (pointsArray.length < 2) {
         return { type: "FeatureCollection", features: [] };
     }
@@ -307,80 +245,6 @@ function addCanadaSymbolLayer(map) {
             "icon-allow-overlap": false,
         },
     });
-}
-
-// Add diamond points symbol layer (deprecated - kept for reference)
-function addDiamondPointsLayer(map) {
-    map.addLayer({
-        id: "diamonds-points",
-        type: "symbol",
-        source: "diamonds-points",
-        minzoom: 17,
-        layout: {
-            "icon-image": "diamond-icon",
-            "icon-size": [
-                "interpolate",
-                ["exponential", 2],
-                ["zoom"],
-                15,
-                ["*", 32768, ["get", "mercator_scale_factor"], 0.03],
-                22,
-                ["*", 4.1943e6, ["get", "mercator_scale_factor"], 0.03],
-            ],
-            "icon-rotate": ["get", "bearing"],
-            "icon-rotation-alignment": "map",
-            "icon-allow-overlap": false,
-        },
-    });
-}
-
-// Create GeoJSON lines connecting diamonds within each region
-function createDiamondLines() {
-    const features = [];
-
-    // Connect Brazil diamonds
-    if (brazilDiamondPoints.length > 1) {
-        const widthCoefficient = computeMercatorScaleFactor(brazilDiamondPoints[0].lat);
-        features.push({
-            type: "Feature",
-            properties: { region: "Brazil", mercator_scale_factor: widthCoefficient },
-            geometry: {
-                type: "LineString",
-                coordinates: brazilDiamondPoints.map((p) => [p.lng, p.lat]),
-            },
-        });
-    }
-
-    // Connect Canada diamonds
-    if (canadaDiamondPoints.length > 1) {
-        const widthCoefficient = computeMercatorScaleFactor(canadaDiamondPoints[0].lat);
-        features.push({
-            type: "Feature",
-            properties: { region: "Canada", mercator_scale_factor: widthCoefficient },
-            geometry: {
-                type: "LineString",
-                coordinates: canadaDiamondPoints.map((p) => [p.lng, p.lat]),
-            },
-        });
-    }
-
-    // Connect Mexico diamonds when available
-    if (mexicoDiamondPoints.length > 1) {
-        const widthCoefficient = computeMercatorScaleFactor(mexicoDiamondPoints[0].lat);
-        features.push({
-            type: "Feature",
-            properties: { region: "Mexico", mercator_scale_factor: widthCoefficient },
-            geometry: {
-                type: "LineString",
-                coordinates: mexicoDiamondPoints.map((p) => [p.lng, p.lat]),
-            },
-        });
-    }
-
-    return {
-        type: "FeatureCollection",
-        features: features,
-    };
 }
 
 // Setup toggle for diamond rendering modes
