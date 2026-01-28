@@ -149,10 +149,20 @@ function initializeDiamonds(map) {
             // Add diamond symbol layer with line placement
             addDiamondLayer(map);
 
-            // Create and add point diamonds
-            const diamondPoints = createDiamondPoints(canadaDiamondPoints2, "Canada");
-            addDiamondPointsSource(map, diamondPoints);
-            addDiamondPointsLayer(map);
+            // Create line and symbol representations for canadaDiamondPoints2
+            const canadaPoints2Line = createDiamondLine(canadaDiamondPoints2, "Canada");
+            const canadaPoints2Symbols = createDiamondPoints(canadaDiamondPoints2, "Canada");
+
+            // Add both sources
+            addCanadaLineSource(map, canadaPoints2Line);
+            addCanadaSymbolSource(map, canadaPoints2Symbols);
+
+            // Add both layers
+            addCanadaLineLayer(map);
+            addCanadaSymbolLayer(map);
+
+            // Setup toggle for Canada diamond rendering modes
+            setupDiamondModeToggle(map);
 
             // Setup location click handlers
             setupLocationClickHandlers(map);
@@ -170,7 +180,23 @@ function addDiamondSource(map, diamondLines) {
     });
 }
 
-// Add diamond points source to map
+// Add Canada line source
+function addCanadaLineSource(map, canadaLine) {
+    map.addSource("canada-line", {
+        type: "geojson",
+        data: canadaLine,
+    });
+}
+
+// Add Canada symbol source
+function addCanadaSymbolSource(map, canadaSymbols) {
+    map.addSource("canada-symbols", {
+        type: "geojson",
+        data: canadaSymbols,
+    });
+}
+
+// Add diamond points source to map (deprecated - kept for reference)
 function addDiamondPointsSource(map, diamondPoints) {
     map.addSource("diamonds-points", {
         type: "geojson",
@@ -205,7 +231,85 @@ function addDiamondLayer(map) {
     });
 }
 
-// Add diamond points symbol layer
+// Create GeoJSON line from diamond points
+function createDiamondLine(pointsArray, region) {
+    if (pointsArray.length < 2) {
+        return { type: "FeatureCollection", features: [] };
+    }
+
+    const widthCoefficient = computeMercatorScaleFactor(pointsArray[0].lat);
+
+    return {
+        type: "FeatureCollection",
+        features: [
+            {
+                type: "Feature",
+                properties: {
+                    region: region,
+                    mercator_scale_factor: widthCoefficient,
+                },
+                geometry: {
+                    type: "LineString",
+                    coordinates: pointsArray.map((p) => [p.lng, p.lat]),
+                },
+            },
+        ],
+    };
+}
+
+// Add Canada line layer
+function addCanadaLineLayer(map) {
+    map.addLayer({
+        id: "canada-line",
+        type: "symbol",
+        source: "canada-line",
+        minzoom: 17,
+        layout: {
+            "symbol-placement": "line",
+            "icon-image": "diamond-icon",
+            "icon-size": [
+                "interpolate",
+                ["exponential", 2],
+                ["zoom"],
+                15,
+                ["*", 32768, ["get", "mercator_scale_factor"], 0.03],
+                22,
+                ["*", 4.1943e6, ["get", "mercator_scale_factor"], 0.03],
+            ],
+            "icon-rotate": 90,
+            "icon-rotation-alignment": "map",
+            "symbol-spacing": 400,
+            "icon-allow-overlap": false,
+        },
+    });
+}
+
+// Add Canada symbol layer
+function addCanadaSymbolLayer(map) {
+    map.addLayer({
+        id: "canada-symbols",
+        type: "symbol",
+        source: "canada-symbols",
+        minzoom: 17,
+        layout: {
+            "icon-image": "diamond-icon",
+            "icon-size": [
+                "interpolate",
+                ["exponential", 2],
+                ["zoom"],
+                15,
+                ["*", 32768, ["get", "mercator_scale_factor"], 0.03],
+                22,
+                ["*", 4.1943e6, ["get", "mercator_scale_factor"], 0.03],
+            ],
+            "icon-rotate": ["get", "bearing"],
+            "icon-rotation-alignment": "map",
+            "icon-allow-overlap": false,
+        },
+    });
+}
+
+// Add diamond points symbol layer (deprecated - kept for reference)
 function addDiamondPointsLayer(map) {
     map.addLayer({
         id: "diamonds-points",
@@ -277,6 +381,30 @@ function createDiamondLines() {
         type: "FeatureCollection",
         features: features,
     };
+}
+
+// Setup toggle for diamond rendering modes
+function setupDiamondModeToggle(map) {
+    const modeSwitch = document.getElementById("diamond-mode-switch");
+
+    if (!modeSwitch) return;
+
+    modeSwitch.addEventListener("change", (e) => {
+        if (e.target.checked) {
+            // Checked = Symbol mode
+            map.setLayoutProperty("canada-line", "visibility", "none");
+            map.setLayoutProperty("canada-symbols", "visibility", "visible");
+        } else {
+            // Unchecked = Line mode
+            map.setLayoutProperty("canada-line", "visibility", "visible");
+            map.setLayoutProperty("canada-symbols", "visibility", "none");
+        }
+    });
+
+    // Initialize with line mode visible (unchecked)
+    modeSwitch.checked = false;
+    map.setLayoutProperty("canada-line", "visibility", "visible");
+    map.setLayoutProperty("canada-symbols", "visibility", "none");
 }
 
 // Setup location click handlers for zooming to regions
