@@ -25,19 +25,16 @@ const regions = [
         name: "Brazil",
         color: "#2e7d32",
         outlineColor: "#1b5e20",
-        center: [-51.9253, -15.7975], // São Paulo area
     },
     {
         name: "Mexico",
         color: "#f57c00",
         outlineColor: "#e65100",
-        center: [-101.5037, 19.4326], // Mexico City area
     },
     {
         name: "Canada",
         color: "#1565c0",
         outlineColor: "#0d47a1",
-        center: [-106.3468, 56.1304], // Alberta area
     },
 ];
 
@@ -301,7 +298,7 @@ function setupDiamondModeToggle(map) {
 // Setup location click handlers for zooming to regions
 function setupLocationClickHandlers(map) {
     const locationClicks = {
-        brazil: { center: [-47.938, -15.779], zoom: 19 },
+        brazil: { center: [-47.937845, -15.778195], zoom: 18 },
         mexico: { center: [-101.5037, 19.4326], zoom: 14 },
         canada: { center: [-113.489909, 53.647888], zoom: 18 },
     };
