@@ -6,8 +6,8 @@ const DEGREE_TO_RADIAN = Math.PI / 180;
 const EARTH_EQUATOR_IN_METERS = 40075016.686;
 const IDEAL_TILE_SIZE_IN_PIXELS = 512;
 
-// Compute width coefficient based on latitude
-function computeWidthCoefficient(latitude) {
+// Compute Mercator scale factor based on latitude
+function computeMercatorScaleFactor(latitude) {
     const latitudeRadian = latitude * DEGREE_TO_RADIAN;
     let cosLatitude = Math.cos(latitudeRadian);
 
@@ -119,7 +119,7 @@ function createDiamondPoints(pointsArray, region) {
             type: "Feature",
             properties: {
                 region: region,
-                width_coefficient: computeWidthCoefficient(point.lat),
+                mercator_scale_factor: computeMercatorScaleFactor(point.lat),
                 bearing: bearing,
             },
             geometry: {
@@ -193,9 +193,9 @@ function addDiamondLayer(map) {
                 ["exponential", 2],
                 ["zoom"],
                 15,
-                ["*", 32768, ["get", "width_coefficient"], 0.03],
+                ["*", 32768, ["get", "mercator_scale_factor"], 0.03],
                 22,
-                ["*", 4.1943e6, ["get", "width_coefficient"], 0.03],
+                ["*", 4.1943e6, ["get", "mercator_scale_factor"], 0.03],
             ],
             "icon-rotate": 90,
             "icon-rotation-alignment": "map",
@@ -219,9 +219,9 @@ function addDiamondPointsLayer(map) {
                 ["exponential", 2],
                 ["zoom"],
                 15,
-                ["*", 32768, ["get", "width_coefficient"], 0.03],
+                ["*", 32768, ["get", "mercator_scale_factor"], 0.03],
                 22,
-                ["*", 4.1943e6, ["get", "width_coefficient"], 0.03],
+                ["*", 4.1943e6, ["get", "mercator_scale_factor"], 0.03],
             ],
             "icon-rotate": ["get", "bearing"],
             "icon-rotation-alignment": "map",
@@ -236,10 +236,10 @@ function createDiamondLines() {
 
     // Connect Brazil diamonds
     if (brazilDiamondPoints.length > 1) {
-        const widthCoefficient = computeWidthCoefficient(brazilDiamondPoints[0].lat);
+        const widthCoefficient = computeMercatorScaleFactor(brazilDiamondPoints[0].lat);
         features.push({
             type: "Feature",
-            properties: { region: "Brazil", width_coefficient: widthCoefficient },
+            properties: { region: "Brazil", mercator_scale_factor: widthCoefficient },
             geometry: {
                 type: "LineString",
                 coordinates: brazilDiamondPoints.map((p) => [p.lng, p.lat]),
@@ -249,10 +249,10 @@ function createDiamondLines() {
 
     // Connect Canada diamonds
     if (canadaDiamondPoints.length > 1) {
-        const widthCoefficient = computeWidthCoefficient(canadaDiamondPoints[0].lat);
+        const widthCoefficient = computeMercatorScaleFactor(canadaDiamondPoints[0].lat);
         features.push({
             type: "Feature",
-            properties: { region: "Canada", width_coefficient: widthCoefficient },
+            properties: { region: "Canada", mercator_scale_factor: widthCoefficient },
             geometry: {
                 type: "LineString",
                 coordinates: canadaDiamondPoints.map((p) => [p.lng, p.lat]),
@@ -262,10 +262,10 @@ function createDiamondLines() {
 
     // Connect Mexico diamonds when available
     if (mexicoDiamondPoints.length > 1) {
-        const widthCoefficient = computeWidthCoefficient(mexicoDiamondPoints[0].lat);
+        const widthCoefficient = computeMercatorScaleFactor(mexicoDiamondPoints[0].lat);
         features.push({
             type: "Feature",
-            properties: { region: "Mexico", width_coefficient: widthCoefficient },
+            properties: { region: "Mexico", mercator_scale_factor: widthCoefficient },
             geometry: {
                 type: "LineString",
                 coordinates: mexicoDiamondPoints.map((p) => [p.lng, p.lat]),
