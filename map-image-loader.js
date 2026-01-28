@@ -13,7 +13,7 @@ const DIAMOND_IMAGE_DATA_URL =
  * @param {number} opacity - Opacity level from 0 to 1 (default: 1)
  * @returns {Promise} - Resolves when image is loaded and added to map
  */
-function loadImageToMap(imageDataUrl, imageId, map, opacity = 0.66) {
+function loadImageToMap(imageDataUrl, imageId, map, opacity = 1) {
     return new Promise((resolve, reject) => {
         const img = new Image();
 

@@ -153,7 +153,7 @@ function createDiamondLineData(pointsArray, region) {
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
     // Load diamond image and use it as symbol icon
-    loadImageToMap(DIAMOND_IMAGE_DATA_URL, "diamond-icon", map)
+    loadImageToMap(DIAMOND_IMAGE_DATA_URL, "diamond-icon", map, 0.66)
         .then(() => {
             // Initialize Brazil diamonds
             const brazilPointsLine = createDiamondLineData(brazilDiamondPoints, "Brazil");
