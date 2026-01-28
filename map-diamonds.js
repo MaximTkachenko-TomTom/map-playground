@@ -216,7 +216,7 @@ function addCanadaLineLayer(map) {
             ],
             "icon-rotate": 90,
             "icon-rotation-alignment": "map",
-            "symbol-spacing": 400,
+            "symbol-spacing": 150,
             "icon-allow-overlap": false,
         },
     });
