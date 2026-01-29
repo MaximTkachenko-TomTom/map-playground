@@ -40,14 +40,13 @@
             </div>
 
             <div id="zoom-display">
-                <span id="zoom-level">Zoom: 4.0</span>
-                <span id="position-display">Position: 0.00°, 0.00°</span>
+                <span id="zoom-level" title="Click to edit zoom level">Zoom: 4.0</span>
+                <input type="text" id="zoom-input" placeholder="zoom" style="display: none" />
             </div>
 
-            <div id="latitude-input-group">
-                <label for="latitude-input">Latitude:</label>
-                <input type="number" id="latitude-input" placeholder="42.5" step="0.0001" min="-90" max="90" />
-                <button id="go-to-latitude-btn" title="Pan to latitude">Go</button>
+            <div id="position-input-group">
+                <span id="position-display" title="Click to edit coordinates">Position: 0.00°, 0.00°</span>
+                <input type="text" id="position-input" placeholder="lng, lat" style="display: none" />
             </div>
 
             <button id="measure-btn" title="Measure distance (click to start)">📏</button>

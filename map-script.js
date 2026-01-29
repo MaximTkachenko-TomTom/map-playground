@@ -30,8 +30,9 @@ function initializeMap() {
         // Initialize measurement tool
         initializeMeasurements(map);
 
-        // Setup latitude input control
-        setupLatitudeInput(map);
+        // Setup zoom and position input controls
+        setupZoomInput(map);
+        setupPositionInput(map);
 
         // Update zoom level display initially
         updateZoomDisplay(map);
@@ -63,34 +64,122 @@ function updateZoomDisplay(map) {
     }
 }
 
-// Setup latitude input control to pan map
-function setupLatitudeInput(map) {
-    const latitudeInput = document.getElementById("latitude-input");
-    const goButton = document.getElementById("go-to-latitude-btn");
+// Setup zoom input control to change zoom level
+function setupZoomInput(map) {
+    const zoomLevel = document.getElementById("zoom-level");
+    const zoomInput = document.getElementById("zoom-input");
 
-    if (!latitudeInput || !goButton) return;
+    if (!zoomLevel || !zoomInput) return;
 
-    // Handle button click
-    goButton.addEventListener("click", () => {
-        const latitude = parseFloat(latitudeInput.value);
-        if (isNaN(latitude) || latitude < -90 || latitude > 90) {
-            alert("Please enter a valid latitude between -90 and 90");
+    // Click on zoom level to enter edit mode
+    zoomLevel.addEventListener("click", () => {
+        zoomInput.value = map.getZoom().toFixed(2);
+        zoomLevel.style.display = "none";
+        zoomInput.style.display = "block";
+        zoomInput.focus();
+        zoomInput.select();
+    });
+
+    // Handle Enter key to apply zoom and exit edit mode
+    zoomInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            applyZoom();
+        }
+    });
+
+    // Handle blur to exit edit mode without applying
+    zoomInput.addEventListener("blur", () => {
+        zoomInput.style.display = "none";
+        zoomLevel.style.display = "block";
+    });
+
+    // Handle Escape key to cancel edit mode
+    zoomInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            zoomInput.style.display = "none";
+            zoomLevel.style.display = "block";
+        }
+    });
+
+    // Parse and apply zoom level
+    function applyZoom() {
+        const zoom = parseFloat(zoomInput.value);
+
+        if (isNaN(zoom) || zoom < 0 || zoom > 28) {
+            alert("Please enter a valid zoom level between 0 and 28");
             return;
         }
 
+        zoomInput.style.display = "none";
+        zoomLevel.style.display = "block";
+
+        map.setZoom(zoom);
+    }
+}
+
+// Setup position input control to pan map to coordinates
+function setupPositionInput(map) {
+    const positionDisplay = document.getElementById("position-display");
+    const positionInput = document.getElementById("position-input");
+
+    if (!positionDisplay || !positionInput) return;
+
+    // Click on position display to enter edit mode
+    positionDisplay.addEventListener("click", () => {
         const center = map.getCenter();
-        map.flyTo({
-            center: [center.lng, latitude],
-            duration: 800,
-        });
+        positionInput.value = `${center.lng.toFixed(4)}, ${center.lat.toFixed(4)}`;
+        positionDisplay.style.display = "none";
+        positionInput.style.display = "block";
+        positionInput.focus();
+        positionInput.select();
     });
 
-    // Handle Enter key in input
-    latitudeInput.addEventListener("keypress", (e) => {
+    // Handle Enter key to apply coordinates and exit edit mode
+    positionInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
-            goButton.click();
+            applyCoordinates();
         }
     });
+
+    // Handle blur to exit edit mode without applying
+    positionInput.addEventListener("blur", () => {
+        positionInput.style.display = "none";
+        positionDisplay.style.display = "block";
+    });
+
+    // Handle Escape key to cancel edit mode
+    positionInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            positionInput.style.display = "none";
+            positionDisplay.style.display = "block";
+        }
+    });
+
+    // Parse and apply coordinates
+    function applyCoordinates() {
+        const input = positionInput.value.trim();
+        const coords = input.split(",").map((s) => parseFloat(s.trim()));
+
+        if (coords.length !== 2 || coords.some(isNaN)) {
+            alert("Please enter coordinates as: longitude, latitude");
+            return;
+        }
+
+        const [lng, lat] = coords;
+
+        if (lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+            alert("Invalid coordinates. Longitude must be -180 to 180, latitude must be -90 to 90");
+            return;
+        }
+
+        positionInput.style.display = "none";
+        positionDisplay.style.display = "block";
+
+        map.flyTo({
+            center: [lng, lat],
+            duration: 800,
+        });
+    }
 }
 
 // Wait for DOM to be ready before initializing

@@ -102,6 +102,28 @@ body,
     font-family: "Courier New", monospace;
     min-width: 100px;
     text-align: center;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+#zoom-level:hover {
+    background: #e8e8e8;
+}
+
+#zoom-input {
+    width: 60px;
+    padding: 4px 6px;
+    font-size: 12px;
+    border: 1px solid #1976d2;
+    border-radius: 3px;
+    font-family: "Courier New", monospace;
+}
+
+#zoom-input:focus {
+    outline: none;
+    box-shadow: 0 0 3px rgba(25, 118, 210, 0.3);
 }
 
 #position-display {
@@ -111,10 +133,18 @@ body,
     font-family: "Courier New", monospace;
     min-width: 160px;
     text-align: center;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    transition: background 0.2s ease;
 }
 
-/* Latitude Input Group */
-#latitude-input-group {
+#position-display:hover {
+    background: #e8e8e8;
+}
+
+/* Position Input Group */
+#position-input-group {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -126,42 +156,35 @@ body,
     border-right: 1px solid #ddd;
 }
 
-#latitude-input-group label {
+#position-display {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: #333;
-    white-space: nowrap;
+    font-family: "Courier New", monospace;
+    min-width: 160px;
+    text-align: center;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    transition: background 0.2s ease;
 }
 
-#latitude-input-group input {
-    width: 80px;
+#position-display:hover {
+    background: #e8e8e8;
+}
+
+#position-input {
+    width: 160px;
     padding: 4px 6px;
     font-size: 12px;
-    border: 1px solid #ccc;
+    border: 1px solid #1976d2;
     border-radius: 3px;
     font-family: "Courier New", monospace;
 }
 
-#latitude-input-group input:focus {
+#position-input:focus {
     outline: none;
-    border-color: #1976d2;
     box-shadow: 0 0 3px rgba(25, 118, 210, 0.3);
-}
-
-#go-to-latitude-btn {
-    padding: 4px 8px;
-    background: #1976d2;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    transition: background 0.2s ease;
-}
-
-#go-to-latitude-btn:hover {
-    background: #1565c0;
 }
 
 /* Diamond Mode Toggle Switch */
