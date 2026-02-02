@@ -152,20 +152,6 @@ function createDiamondTiledPattern(diamondImageData) {
     return canvas;
 }
 
-// Add diamond pattern layer (using line-pattern paint property with tiled pattern)
-function addDiamondPatternLayer(map, sourceId, layerId) {
-    map.addLayer({
-        id: layerId,
-        type: "line",
-        source: sourceId,
-        minzoom: 17,
-        paint: {
-            "line-width": 120,
-            "line-pattern": "diamond-tiled-pattern",
-        },
-    });
-}
-
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
     // Load diamond image with opacity for symbols
@@ -262,6 +248,20 @@ function addDiamondSymbolLayer(map, sourceId) {
             "icon-rotate": ["get", "bearing"],
             "icon-rotation-alignment": "map",
             "icon-allow-overlap": false,
+        },
+    });
+}
+
+// Add diamond pattern layer (using line-pattern paint property with tiled pattern)
+function addDiamondPatternLayer(map, sourceId, layerId) {
+    map.addLayer({
+        id: layerId,
+        type: "line",
+        source: sourceId,
+        minzoom: 17,
+        paint: {
+            "line-width": 120,
+            "line-pattern": "diamond-tiled-pattern",
         },
     });
 }
