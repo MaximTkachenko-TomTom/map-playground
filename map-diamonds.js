@@ -119,11 +119,64 @@ function createDiamondLineData(pointsArray, region) {
     };
 }
 
+// Create a horizontally-tiled diamond pattern image
+function createDiamondTiledPattern(diamondImageData) {
+    const canvas = document.createElement("canvas");
+
+    // Create a wide pattern with multiple diamonds tiled horizontally
+    const diamondWidth = diamondImageData.width;
+    const diamondHeight = diamondImageData.height;
+    const spacing = 100; // Spacing between diamonds
+    const numDiamonds = 6; // Number of diamonds in the pattern
+
+    canvas.width = numDiamonds * spacing;
+    canvas.height = diamondHeight;
+
+    const ctx = canvas.getContext("2d");
+
+    // Clear with transparency
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Create a temporary canvas from ImageData
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = diamondWidth;
+    tempCanvas.height = diamondHeight;
+    tempCanvas.getContext("2d").putImageData(diamondImageData, 0, 0);
+
+    // Draw diamonds across the pattern
+    for (let i = 0; i < numDiamonds; i++) {
+        const x = i * spacing + (spacing - diamondWidth) / 2;
+        ctx.drawImage(tempCanvas, x, 0);
+    }
+
+    return canvas;
+}
+
+// Add diamond pattern layer (using line-pattern paint property with tiled pattern)
+function addDiamondPatternLayer(map, sourceId, layerId) {
+    map.addLayer({
+        id: layerId,
+        type: "line",
+        source: sourceId,
+        minzoom: 17,
+        paint: {
+            "line-width": 120,
+            "line-pattern": "diamond-tiled-pattern",
+        },
+    });
+}
+
 // Initialize diamonds on map load
 function initializeDiamonds(map) {
-    // Load diamond image and use it as symbol icon
+    // Load diamond image with opacity for symbols
     loadImageToMap(DIAMOND_IMAGE_DATA_URL, "diamond-icon", map, 0.66)
-        .then(() => {
+        .then((diamondImageData) => {
+            // Create and register tiled pattern for line-pattern rendering
+            const tiledPatternCanvas = createDiamondTiledPattern(diamondImageData);
+            const tiledPatternImageData = tiledPatternCanvas
+                .getContext("2d")
+                .getImageData(0, 0, tiledPatternCanvas.width, tiledPatternCanvas.height);
+            map.addImage("diamond-tiled-pattern", tiledPatternImageData);
             // Initialize Brazil diamonds
             const brazilPointsLine = createDiamondLineData(brazilDiamondPoints, "Brazil");
             const brazilPointsSymbols = createDiamondPointsData(brazilDiamondPoints, "Brazil");
@@ -131,6 +184,7 @@ function initializeDiamonds(map) {
             addDiamondSource(map, "brazil-symbols", brazilPointsSymbols);
             addDiamondLineLayer(map, "brazil-line");
             addDiamondSymbolLayer(map, "brazil-symbols");
+            addDiamondPatternLayer(map, "brazil-line", "brazil-pattern");
 
             // Initialize Canada diamonds
             const canadaPointsLine = createDiamondLineData(canadaDiamondPoints, "Canada");
@@ -139,6 +193,7 @@ function initializeDiamonds(map) {
             addDiamondSource(map, "canada-symbols", canadaPointsSymbols);
             addDiamondLineLayer(map, "canada-line");
             addDiamondSymbolLayer(map, "canada-symbols");
+            addDiamondPatternLayer(map, "canada-line", "canada-pattern");
 
             // Setup toggle for diamond rendering modes
             setupDiamondModeToggle(map);
