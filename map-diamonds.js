@@ -211,57 +211,62 @@ function addDiamondSymbolLayer(map, sourceId) {
     });
 }
 
-// Setup toggle for diamond rendering modes
+// Setup toggle for diamond rendering modes (3 modes: line, symbol, line-pattern)
 function setupDiamondModeToggle(map) {
-    const modeSwitch = document.getElementById("diamond-mode-switch");
+    const modeSelect = document.getElementById("diamond-mode-select");
 
-    if (!modeSwitch) return;
+    if (!modeSelect) return;
 
-    modeSwitch.addEventListener("change", (e) => {
-        const lineLayerIds = ["brazil-line", "canada-line"];
-        const symbolLayerIds = ["brazil-symbols", "canada-symbols"];
-
-        if (e.target.checked) {
-            // Checked = Symbol mode
-            lineLayerIds.forEach((id) => {
-                if (map.getLayer(id)) {
-                    map.setLayoutProperty(id, "visibility", "none");
-                }
-            });
-            symbolLayerIds.forEach((id) => {
-                if (map.getLayer(id)) {
-                    map.setLayoutProperty(id, "visibility", "visible");
-                }
-            });
-        } else {
-            // Unchecked = Line mode
-            lineLayerIds.forEach((id) => {
-                if (map.getLayer(id)) {
-                    map.setLayoutProperty(id, "visibility", "visible");
-                }
-            });
-            symbolLayerIds.forEach((id) => {
-                if (map.getLayer(id)) {
-                    map.setLayoutProperty(id, "visibility", "none");
-                }
-            });
-        }
+    modeSelect.addEventListener("change", (e) => {
+        applyDiamondMode(map, e.target.value);
     });
 
-    // Initialize with line mode visible (unchecked)
-    modeSwitch.checked = false;
+    // Initialize with line mode
+    modeSelect.value = "line";
+    applyDiamondMode(map, "line");
+}
+
+// Apply diamond rendering mode
+function applyDiamondMode(map, mode) {
     const lineLayerIds = ["brazil-line", "canada-line"];
     const symbolLayerIds = ["brazil-symbols", "canada-symbols"];
-    lineLayerIds.forEach((id) => {
-        if (map.getLayer(id)) {
-            map.setLayoutProperty(id, "visibility", "visible");
-        }
-    });
-    symbolLayerIds.forEach((id) => {
+    const patternLayerIds = ["brazil-pattern", "canada-pattern"];
+
+    const allLayerIds = [...lineLayerIds, ...symbolLayerIds, ...patternLayerIds];
+
+    // Hide all diamond layers first
+    allLayerIds.forEach((id) => {
         if (map.getLayer(id)) {
             map.setLayoutProperty(id, "visibility", "none");
         }
     });
+
+    // Show layers based on selected mode
+    switch (mode) {
+        case "line":
+            lineLayerIds.forEach((id) => {
+                if (map.getLayer(id)) {
+                    map.setLayoutProperty(id, "visibility", "visible");
+                }
+            });
+            break;
+        case "symbol":
+            symbolLayerIds.forEach((id) => {
+                if (map.getLayer(id)) {
+                    map.setLayoutProperty(id, "visibility", "visible");
+                }
+            });
+            break;
+        case "line-pattern":
+            patternLayerIds.forEach((id) => {
+                if (map.getLayer(id)) {
+                    map.setLayoutProperty(id, "visibility", "visible");
+                }
+            });
+            break;
+        default:
+            console.warn(`Unknown diamond mode: ${mode}`);
+    }
 }
 
 // Setup location click handlers for zooming to regions
