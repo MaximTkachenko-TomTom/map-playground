@@ -16,6 +16,10 @@ function initializeMap() {
             `renderer=premium`,
         center: [-60, 10],
         zoom: 4,
+        pitch: 0, // Initial tilt angle (0-85 degrees)
+        bearing: 0, // Initial rotation angle (0-360 degrees)
+        dragRotate: true, // Enable Ctrl+drag to rotate
+        pitchWithRotate: true, // Enable pitch control with rotation
     });
 
     map.on("error", (e) => {
@@ -33,6 +37,7 @@ function initializeMap() {
         // Setup zoom and position input controls
         setupZoomInput(map);
         setupPositionInput(map);
+        setupPitchInput(map);
 
         // Update zoom level display initially
         updateZoomDisplay(map);
@@ -46,6 +51,11 @@ function initializeMap() {
     // Update position when map is panned
     map.on("move", () => {
         updateZoomDisplay(map);
+    });
+
+    // Update pitch when map is tilted
+    map.on("pitch", () => {
+        updatePitchDisplay(map);
     });
 }
 
@@ -62,6 +72,8 @@ function updateZoomDisplay(map) {
     if (positionDisplay) {
         positionDisplay.textContent = `Position: ${center.lng.toFixed(4)}°, ${center.lat.toFixed(4)}°`;
     }
+
+    updatePitchDisplay(map);
 }
 
 // Setup zoom input control to change zoom level
@@ -179,6 +191,68 @@ function setupPositionInput(map) {
             center: [lng, lat],
             duration: 800,
         });
+    }
+}
+
+// Update the pitch display
+function updatePitchDisplay(map) {
+    const pitch = map.getPitch();
+    const pitchDisplay = document.getElementById("pitch-level");
+    if (pitchDisplay) {
+        pitchDisplay.textContent = `Pitch: ${pitch.toFixed(0)}°`;
+    }
+}
+
+// Setup pitch input control to change pitch angle
+function setupPitchInput(map) {
+    const pitchLevel = document.getElementById("pitch-level");
+    const pitchInput = document.getElementById("pitch-input");
+
+    if (!pitchLevel || !pitchInput) return;
+
+    // Click on pitch level to enter edit mode
+    pitchLevel.addEventListener("click", () => {
+        pitchInput.value = map.getPitch().toFixed(0);
+        pitchLevel.style.display = "none";
+        pitchInput.style.display = "block";
+        pitchInput.focus();
+        pitchInput.select();
+    });
+
+    // Handle Enter key to apply pitch and exit edit mode
+    pitchInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            applyPitch();
+        }
+    });
+
+    // Handle blur to exit edit mode without applying
+    pitchInput.addEventListener("blur", () => {
+        pitchInput.style.display = "none";
+        pitchLevel.style.display = "block";
+    });
+
+    // Handle Escape key to cancel edit mode
+    pitchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            pitchInput.style.display = "none";
+            pitchLevel.style.display = "block";
+        }
+    });
+
+    // Parse and apply pitch angle
+    function applyPitch() {
+        const pitch = parseFloat(pitchInput.value);
+
+        if (isNaN(pitch) || pitch < 0 || pitch > 85) {
+            alert("Please enter a valid pitch angle between 0 and 85 degrees");
+            return;
+        }
+
+        pitchInput.style.display = "none";
+        pitchLevel.style.display = "block";
+
+        map.setPitch(pitch);
     }
 }
 

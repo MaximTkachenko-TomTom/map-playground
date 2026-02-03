@@ -187,6 +187,51 @@ body,
     box-shadow: 0 0 3px rgba(25, 118, 210, 0.3);
 }
 
+/* Pitch Display */
+#pitch-display {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    margin-right: 20px;
+    padding-right: 20px;
+    border-right: 1px solid #ddd;
+}
+
+#pitch-level {
+    font-size: 12px;
+    font-weight: 700;
+    color: #333;
+    font-family: "Courier New", monospace;
+    min-width: 80px;
+    text-align: center;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+#pitch-level:hover {
+    background: #e8e8e8;
+}
+
+#pitch-input {
+    width: 60px;
+    padding: 4px 6px;
+    font-size: 12px;
+    border: 1px solid #1976d2;
+    border-radius: 3px;
+    font-family: "Courier New", monospace;
+}
+
+#pitch-input:focus {
+    outline: none;
+    box-shadow: 0 0 3px rgba(25, 118, 210, 0.3);
+}
+
 /* Diamond Mode Toggle Switch */
 #diamond-mode-toggle {
     display: flex;
